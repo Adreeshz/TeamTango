@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Matches - TeamTango</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex-shrink-0 flex items-center">
+                        <i data-feather="activity" class="text-primary-600 h-8 w-8"></i>
+                        <span class="ml-2 text-xl font-bold text-primary-600">TeamTango</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
+                        <a href="teams.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">My Teams</a>
+                        <a href="venues.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Venues</a>
+                        <a href="matches.html" class="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Matches</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button class="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i data-feather="bell"></i>
+                    </button>
+                    <div class="ml-3 relative">
+                        <button type="button" class="bg-white rounded-full flex text-sm focus:outline-none">
+                            <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" alt="">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                    Matches
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    View, schedule, and manage your team matches.
+                </p>
+            </div>
+            <div class="mt-4 flex md:mt-0 md:ml-4">
+                <button type="button" id="schedule-match-btn" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700">
+                    <i data-feather="plus" class="mr-2 h-4 w-4"></i>
+                    Schedule Match
+                </button>
+            </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="border-b border-gray-200 mb-8">
+            <nav class="-mb-px flex space-x-8">
+                <button class="tab-btn active whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="upcoming">
+                    Upcoming Matches
+                </button>
+                <button class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="completed">
+                    Completed Matches
+                </button>
+                <button class="tab-btn whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm" data-tab="cancelled">
+                    Cancelled Matches
+                </button>
+            </nav>
+        </div>
+
+        <!-- Matches Content -->
+        <div id="upcoming-tab" class="tab-content">
+            <div id="upcoming-matches" class="space-y-4">
+                <!-- Upcoming matches will be loaded here -->
+            </div>
+        </div>
+
+        <div id="completed-tab" class="tab-content hidden">
+            <div id="completed-matches" class="space-y-4">
+                <!-- Completed matches will be loaded here -->
+            </div>
+        </div>
+
+        <div id="cancelled-tab" class="tab-content hidden">
+            <div id="cancelled-matches" class="space-y-4">
+                <!-- Cancelled matches will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i data-feather="calendar" class="mx-auto h-12 w-12 text-gray-400"></i>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No matches found</h3>
+            <p class="mt-1 text-sm text-gray-500">Schedule your first match to get started.</p>
+            <div class="mt-6">
+                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700">
+                    <i data-feather="plus" class="mr-2 h-4 w-4"></i>
+                    Schedule Match
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Schedule Match Modal -->
+    <div id="match-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Schedule New Match</h3>
+                    <button id="close-match-modal" class="text-gray-400 hover:text-gray-600">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <form id="match-form">
+                    <div class="mb-4">
+                        <label for="match-team1" class="block text-sm font-medium text-gray-700 mb-2">Your Team</label>
+                        <select id="match-team1" name="team1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select your team</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="match-team2" class="block text-sm font-medium text-gray-700 mb-2">Opponent Team</label>
+                        <input type="text" id="match-team2" name="team2" placeholder="Enter opponent team name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="match-venue" class="block text-sm font-medium text-gray-700 mb-2">Venue</label>
+                        <select id="match-venue" name="venue" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select venue</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="match-date" class="block text-sm font-medium text-gray-700 mb-2">Match Date</label>
+                        <input type="date" id="match-date" name="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="match-time" class="block text-sm font-medium text-gray-700 mb-2">Match Time</label>
+                        <input type="time" id="match-time" name="time" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="match-description" class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                        <textarea id="match-description" name="description" rows="3" placeholder="Additional details about the match" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"></textarea>
+                    </div>
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-match-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                            Schedule Match
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        feather.replace();
+        
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Sample data
+        const sampleMatches = [
+            {
+                MatchID: 1,
+                Team1: "Thunder Bolts",
+                Team2: "Lightning Eagles",
+                Venue: "Sports Complex Arena",
+                MatchDate: "2024-10-15",
+                MatchTime: "15:00",
+                Status: "Upcoming",
+                Description: "Quarterly championship match",
+                Result: null
+            },
+            {
+                MatchID: 2,
+                Team1: "Court Warriors",
+                Team2: "Net Masters",
+                Venue: "Tennis Club Elite",
+                MatchDate: "2024-10-20",
+                MatchTime: "10:00",
+                Status: "Upcoming",
+                Description: "Friendly doubles match",
+                Result: null
+            },
+            {
+                MatchID: 3,
+                Team1: "Thunder Bolts",
+                Team2: "City Hawks",
+                Venue: "Green Field Stadium",
+                MatchDate: "2024-09-28",
+                MatchTime: "18:00",
+                Status: "Completed",
+                Description: "League match",
+                Result: "Won 3-1"
+            },
+            {
+                MatchID: 4,
+                Team1: "Lightning Eagles",
+                Team2: "Storm Riders",
+                Venue: "Badminton Center",
+                MatchDate: "2024-09-25",
+                MatchTime: "14:00",
+                Status: "Completed",
+                Description: "Tournament semifinal",
+                Result: "Lost 1-2"
+            }
+        ];
+
+        const sampleTeams = [
+            { TeamID: 1, TeamName: "Thunder Bolts" },
+            { TeamID: 2, TeamName: "Lightning Eagles" },
+            { TeamID: 3, TeamName: "Court Warriors" }
+        ];
+
+        const sampleVenues = [
+            { VenueID: 1, VenueName: "Sports Complex Arena" },
+            { VenueID: 2, VenueName: "Green Field Stadium" },
+            { VenueID: 3, VenueName: "Tennis Club Elite" },
+            { VenueID: 4, VenueName: "Badminton Center" }
+        ];
+
+        let currentTab = 'upcoming';
+
+        // Tab functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tabName = btn.dataset.tab;
+                switchTab(tabName);
+            });
+        });
+
+        function switchTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-primary-500', 'text-primary-600');
+                btn.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            });
+            
+            document.querySelector(`[data-tab="${tabName}"]`).classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active', 'border-primary-500', 'text-primary-600');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.getElementById(`${tabName}-tab`).classList.remove('hidden');
+
+            currentTab = tabName;
+            loadMatches();
+        }
+
+        // Load matches
+        async function loadMatches() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/matches`);
+                const matches = await response.json();
+                displayMatches(matches);
+            } catch (error) {
+                console.log('Using sample match data');
+                displayMatches(sampleMatches);
+            }
+        }
+
+        // Display matches
+        function displayMatches(allMatches) {
+            const upcomingContainer = document.getElementById('upcoming-matches');
+            const completedContainer = document.getElementById('completed-matches');
+            const cancelledContainer = document.getElementById('cancelled-matches');
+
+            const upcoming = allMatches.filter(match => match.Status === 'Upcoming');
+            const completed = allMatches.filter(match => match.Status === 'Completed');
+            const cancelled = allMatches.filter(match => match.Status === 'Cancelled');
+
+            upcomingContainer.innerHTML = renderMatches(upcoming, 'upcoming');
+            completedContainer.innerHTML = renderMatches(completed, 'completed');
+            cancelledContainer.innerHTML = renderMatches(cancelled, 'cancelled');
+
+            feather.replace();
+        }
+
+        // Render matches
+        function renderMatches(matches, type) {
+            if (matches.length === 0) {
+                return `
+                    <div class="text-center py-8">
+                        <i data-feather="calendar" class="mx-auto h-8 w-8 text-gray-400"></i>
+                        <p class="mt-2 text-sm text-gray-500">No ${type} matches</p>
+                    </div>
+                `;
+            }
+
+            return matches.map(match => `
+                <div class="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow duration-300">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-4">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-2">
+                                    <h3 class="text-lg font-medium text-gray-900">${match.Team1}</h3>
+                                    <span class="text-gray-400">vs</span>
+                                    <h3 class="text-lg font-medium text-gray-900">${match.Team2}</h3>
+                                </div>
+                                <div class="flex items-center mt-2 text-sm text-gray-500">
+                                    <i data-feather="map-pin" class="h-4 w-4 mr-1"></i>
+                                    <span>${match.Venue}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <div class="flex items-center text-sm text-gray-500 mb-1">
+                                <i data-feather="calendar" class="h-4 w-4 mr-1"></i>
+                                ${new Date(match.MatchDate).toLocaleDateString()}
+                            </div>
+                            <div class="flex items-center text-sm text-gray-500">
+                                <i data-feather="clock" class="h-4 w-4 mr-1"></i>
+                                ${match.MatchTime}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${match.Description ? `<p class="text-sm text-gray-600 mb-4">${match.Description}</p>` : ''}
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            ${getStatusBadge(match.Status)}
+                            ${match.Result ? `<span class="text-sm font-medium ${match.Result.includes('Won') ? 'text-green-600' : 'text-red-600'}">${match.Result}</span>` : ''}
+                        </div>
+                        <div class="flex space-x-2">
+                            ${type === 'upcoming' ? `
+                                <button onclick="editMatch(${match.MatchID})" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
+                                    Edit
+                                </button>
+                                <button onclick="cancelMatch(${match.MatchID})" class="text-red-600 hover:text-red-900 text-sm font-medium">
+                                    Cancel
+                                </button>
+                            ` : ''}
+                            ${type === 'completed' ? `
+                                <button onclick="viewMatchDetails(${match.MatchID})" class="text-primary-600 hover:text-primary-900 text-sm font-medium">
+                                    View Details
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Get status badge
+        function getStatusBadge(status) {
+            const badges = {
+                'Upcoming': 'bg-blue-100 text-blue-800',
+                'Completed': 'bg-green-100 text-green-800',
+                'Cancelled': 'bg-red-100 text-red-800'
+            };
+
+            return `<span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${badges[status]}">${status}</span>`;
+        }
+
+        // Load teams and venues for the form
+        async function loadTeamsAndVenues() {
+            try {
+                const [teamsResponse, venuesResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/teams`),
+                    fetch(`${API_BASE_URL}/venues`)
+                ]);
+                
+                const teams = await teamsResponse.json();
+                const venues = await venuesResponse.json();
+                
+                populateTeamsSelect(teams);
+                populateVenuesSelect(venues);
+            } catch (error) {
+                console.log('Using sample data for teams and venues');
+                populateTeamsSelect(sampleTeams);
+                populateVenuesSelect(sampleVenues);
+            }
+        }
+
+        // Populate teams select
+        function populateTeamsSelect(teams) {
+            const teamSelect = document.getElementById('match-team1');
+            teamSelect.innerHTML = '<option value="">Select your team</option>';
+            
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.TeamID;
+                option.textContent = team.TeamName;
+                teamSelect.appendChild(option);
+            });
+        }
+
+        // Populate venues select
+        function populateVenuesSelect(venues) {
+            const venueSelect = document.getElementById('match-venue');
+            venueSelect.innerHTML = '<option value="">Select venue</option>';
+            
+            venues.forEach(venue => {
+                const option = document.createElement('option');
+                option.value = venue.VenueID;
+                option.textContent = venue.VenueName;
+                venueSelect.appendChild(option);
+            });
+        }
+
+        // Modal functionality
+        const matchModal = document.getElementById('match-modal');
+        const scheduleMatchBtn = document.getElementById('schedule-match-btn');
+        const closeMatchModalBtn = document.getElementById('close-match-modal');
+        const cancelMatchBtn = document.getElementById('cancel-match-btn');
+        const matchForm = document.getElementById('match-form');
+
+        scheduleMatchBtn.addEventListener('click', () => {
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('match-date').setAttribute('min', today);
+            
+            matchModal.classList.remove('hidden');
+        });
+
+        closeMatchModalBtn.addEventListener('click', () => {
+            matchModal.classList.add('hidden');
+            matchForm.reset();
+        });
+
+        cancelMatchBtn.addEventListener('click', () => {
+            matchModal.classList.add('hidden');
+            matchForm.reset();
+        });
+
+        // Close modal when clicking outside
+        matchModal.addEventListener('click', (e) => {
+            if (e.target === matchModal) {
+                matchModal.classList.add('hidden');
+                matchForm.reset();
+            }
+        });
+
+        // Schedule match
+        matchForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(matchForm);
+            const matchData = {
+                Team1ID: formData.get('team1'),
+                Team2Name: formData.get('team2'),
+                VenueID: formData.get('venue'),
+                MatchDate: formData.get('date'),
+                MatchTime: formData.get('time'),
+                Description: formData.get('description'),
+                UserID: 1 // Assuming logged in user ID
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/matches/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(matchData)
+                });
+
+                if (response.ok) {
+                    alert('Match scheduled successfully!');
+                    matchModal.classList.add('hidden');
+                    matchForm.reset();
+                    loadMatches(); // Reload matches
+                } else {
+                    alert('Error scheduling match');
+                }
+            } catch (error) {
+                console.log('Error scheduling match:', error);
+                alert('Match scheduled successfully! (Demo mode)');
+                matchModal.classList.add('hidden');
+                matchForm.reset();
+                
+                // For demo purposes, add to sample data
+                const newMatch = {
+                    MatchID: Date.now(),
+                    Team1: sampleTeams.find(t => t.TeamID == matchData.Team1ID)?.TeamName || 'Unknown',
+                    Team2: matchData.Team2Name,
+                    Venue: sampleVenues.find(v => v.VenueID == matchData.VenueID)?.VenueName || 'Unknown',
+                    MatchDate: matchData.MatchDate,
+                    MatchTime: matchData.MatchTime,
+                    Status: 'Upcoming',
+                    Description: matchData.Description,
+                    Result: null
+                };
+                sampleMatches.push(newMatch);
+                displayMatches(sampleMatches);
+            }
+        });
+
+        // Match actions
+        function editMatch(matchId) {
+            alert(`Edit match ${matchId} (Feature coming soon)`);
+        }
+
+        function cancelMatch(matchId) {
+            if (confirm('Are you sure you want to cancel this match?')) {
+                // Update match status in sample data
+                const match = sampleMatches.find(m => m.MatchID == matchId);
+                if (match) {
+                    match.Status = 'Cancelled';
+                    displayMatches(sampleMatches);
+                }
+                alert('Match cancelled successfully');
+            }
+        }
+
+        function viewMatchDetails(matchId) {
+            alert(`View details for match ${matchId} (Feature coming soon)`);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadMatches();
+            loadTeamsAndVenues();
+        });
+    </script>
+</body>
+</html>

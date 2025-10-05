@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TeamTango - Analytics Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-blue-600">TeamTango Analytics</h1>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <a href="/" class="text-gray-600 hover:text-blue-600">← Back to Home</a>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dashboard Content -->
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100">
+                            <i data-feather="users" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900" id="total-users">-</h3>
+                            <p class="text-sm text-gray-600">Total Users</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100">
+                            <i data-feather="map-pin" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900" id="total-venues">-</h3>
+                            <p class="text-sm text-gray-600">Total Venues</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-purple-100">
+                            <i data-feather="calendar" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900" id="total-bookings">-</h3>
+                            <p class="text-sm text-gray-600">Total Bookings</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-orange-100">
+                            <i data-feather="activity" class="w-6 h-6 text-orange-600"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-900" id="total-sports">-</h3>
+                            <p class="text-sm text-gray-600">Sports Available</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Popular Sports Chart -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Popular Sports</h3>
+                    <canvas id="sportsChart" width="400" height="200"></canvas>
+                </div>
+                
+                <!-- Peak Hours Chart -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold mb-4">Peak Booking Hours</h3>
+                    <canvas id="hoursChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Tables Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Recent Bookings -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="text-lg font-semibold">Recent Bookings</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left py-2">Player</th>
+                                        <th class="text-left py-2">Venue</th>
+                                        <th class="text-left py-2">Date</th>
+                                        <th class="text-left py-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="recent-bookings">
+                                    <tr><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Available Timeslots -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b">
+                        <h3 class="text-lg font-semibold">Available Today</h3>
+                    </div>
+                    <div class="p-6">
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left py-2">Venue</th>
+                                        <th class="text-left py-2">Sport</th>
+                                        <th class="text-left py-2">Time</th>
+                                        <th class="text-left py-2">Price</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="available-slots">
+                                    <tr><td colspan="4" class="text-center py-4 text-gray-500">Loading...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:5000/api';
+        
+        // Initialize dashboard
+        async function loadDashboard() {
+            try {
+                // Load stats
+                await loadStats();
+                
+                // Load charts
+                await loadSportsChart();
+                await loadHoursChart();
+                
+                // Load tables
+                await loadRecentBookings();
+                await loadAvailableSlots();
+                
+                // Initialize Feather icons
+                feather.replace();
+                
+            } catch (error) {
+                console.error('Dashboard loading error:', error);
+            }
+        }
+        
+        // Load summary stats
+        async function loadStats() {
+            const [users, venues, bookings, sports] = await Promise.all([
+                fetch(`${API_BASE_URL}/analytics/profiles`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/analytics/venue-details`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/analytics/booking-summaries`).then(r => r.json()),
+                fetch(`${API_BASE_URL}/analytics/popular-sports`).then(r => r.json())
+            ]);
+            
+            document.getElementById('total-users').textContent = users.length || 0;
+            document.getElementById('total-venues').textContent = venues.length || 0;
+            document.getElementById('total-bookings').textContent = bookings.length || 0;
+            document.getElementById('total-sports').textContent = sports.length || 0;
+        }
+        
+        // Load popular sports chart
+        async function loadSportsChart() {
+            const response = await fetch(`${API_BASE_URL}/analytics/popular-sports`);
+            const sports = await response.json();
+            
+            const ctx = document.getElementById('sportsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: sports.map(s => s.SportName),
+                    datasets: [{
+                        data: sports.map(s => s.BookingCount || 0),
+                        backgroundColor: [
+                            '#3B82F6', '#10B981', '#F59E0B', '#EF4444', 
+                            '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false
+                }
+            });
+        }
+        
+        // Load peak hours chart
+        async function loadHoursChart() {
+            const response = await fetch(`${API_BASE_URL}/analytics/peak-hours`);
+            const hours = await response.json();
+            
+            // Group by hour
+            const hourlyData = {};
+            hours.forEach(h => {
+                hourlyData[h.HourOfDay] = (hourlyData[h.HourOfDay] || 0) + h.BookingCount;
+            });
+            
+            const ctx = document.getElementById('hoursChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(hourlyData).map(h => `${h}:00`),
+                    datasets: [{
+                        label: 'Bookings',
+                        data: Object.values(hourlyData),
+                        backgroundColor: '#3B82F6'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+        
+        // Load recent bookings
+        async function loadRecentBookings() {
+            const response = await fetch(`${API_BASE_URL}/analytics/booking-summaries`);
+            const bookings = await response.json();
+            
+            const tbody = document.getElementById('recent-bookings');
+            tbody.innerHTML = bookings.slice(0, 5).map(b => `
+                <tr class="border-b">
+                    <td class="py-2">${b.PlayerName}</td>
+                    <td class="py-2">${b.VenueName}</td>
+                    <td class="py-2">${new Date(b.Date).toLocaleDateString()}</td>
+                    <td class="py-2">
+                        <span class="px-2 py-1 text-xs rounded-full ${
+                            b.BookingStatus === 'Confirmed' ? 'bg-green-100 text-green-800' : 
+                            b.BookingStatus === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800'
+                        }">${b.BookingStatus}</span>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center py-4 text-gray-500">No bookings found</td></tr>';
+        }
+        
+        // Load available slots
+        async function loadAvailableSlots() {
+            const today = new Date().toISOString().split('T')[0];
+            const response = await fetch(`${API_BASE_URL}/analytics/available-timeslots?date=${today}`);
+            const slots = await response.json();
+            
+            const tbody = document.getElementById('available-slots');
+            tbody.innerHTML = slots.slice(0, 5).map(s => `
+                <tr class="border-b">
+                    <td class="py-2">${s.VenueName}</td>
+                    <td class="py-2">${s.SportName}</td>
+                    <td class="py-2">${s.StartTime} - ${s.EndTime}</td>
+                    <td class="py-2">₹${s.PricePerHour}/hr</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" class="text-center py-4 text-gray-500">No slots available</td></tr>';
+        }
+        
+        // Load dashboard when page loads
+        document.addEventListener('DOMContentLoaded', loadDashboard);
+    </script>
+</body>
+</html>

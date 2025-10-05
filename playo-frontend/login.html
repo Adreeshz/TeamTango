@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - TeamTango Pune</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <!-- Header -->
+    <nav class="relative z-10 bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <i data-feather="activity" class="h-8 w-8 text-blue-600"></i>
+                        <span class="ml-2 text-2xl font-bold text-gray-900">TeamTango</span>
+                    </div>
+                    <span class="text-blue-600 font-semibold">Pune</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i data-feather="home" class="h-5 w-5 inline mr-1"></i>
+                        Home
+                    </a>
+                    <a href="register.html" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i data-feather="user-plus" class="h-5 w-5 inline mr-1"></i>
+                        Register
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Login Form -->
+    <div class="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full">
+            <div class="glass-effect rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <i data-feather="log-in" class="h-16 w-16 text-blue-600 mx-auto mb-4"></i>
+                    <h2 class="text-3xl font-bold text-gray-900">Welcome Back</h2>
+                    <p class="text-gray-600 mt-2">Sign in to your TeamTango Pune account</p>
+                </div>
+
+                <!-- Login Form -->
+                <form id="loginForm" class="space-y-6">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-feather="mail" class="h-4 w-4 inline mr-1"></i>
+                            Email Address
+                        </label>
+                        <input type="email" id="email" name="email" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="your.email@example.com">
+                    </div>
+                    
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-feather="lock" class="h-4 w-4 inline mr-1"></i>
+                            Password
+                        </label>
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Enter your password">
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <input id="remember" name="remember" type="checkbox"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            <label for="remember" class="ml-2 block text-sm text-gray-700">
+                                Remember me
+                            </label>
+                        </div>
+                        <a href="#" class="text-sm text-blue-600 hover:text-blue-500">
+                            Forgot password?
+                        </a>
+                    </div>
+                    
+                    <button type="submit" id="loginBtn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-feather="log-in" class="h-5 w-5"></i>
+                        <span>Sign In</span>
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">
+                        Don't have an account? 
+                        <a href="register.html" class="text-blue-600 hover:text-blue-500 font-semibold">Register here</a>
+                    </p>
+                </div>
+
+                <!-- Quick Demo Access -->
+                <div class="mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <h4 class="text-sm font-semibold text-yellow-800 mb-2">Demo Access</h4>
+                    <p class="text-xs text-yellow-700 mb-3">Try the system with demo accounts:</p>
+                    <div class="space-y-2">
+                        <button type="button" class="demo-login w-full text-left text-xs bg-white px-3 py-2 rounded border hover:bg-gray-50" data-email="rahul.player@gmail.com" data-password="player123">
+                            🏏 Player Demo: rahul.player@gmail.com
+                        </button>
+                        <button type="button" class="demo-login w-full text-left text-xs bg-white px-3 py-2 rounded border hover:bg-gray-50" data-email="priya.venue@gmail.com" data-password="venue123">
+                            🏟️ Venue Owner Demo: priya.venue@gmail.com
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast bg-white rounded-lg shadow-lg p-4 border-l-4 hidden">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i id="toast-icon" data-feather="check-circle" class="h-6 w-6"></i>
+            </div>
+            <div class="ml-3">
+                <p id="toast-message" class="text-sm font-medium text-gray-800"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Demo login buttons
+        document.querySelectorAll('.demo-login').forEach(button => {
+            button.addEventListener('click', function() {
+                document.getElementById('email').value = this.dataset.email;
+                document.getElementById('password').value = this.dataset.password;
+                showToast('Demo credentials loaded. Click Sign In to continue.', 'info');
+            });
+        });
+
+        // Form submission
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const loginBtn = document.getElementById('loginBtn');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i data-feather="loader" class="h-5 w-5 animate-spin"></i><span>Signing In...</span>';
+            feather.replace();
+            
+            try {
+                const loginData = {
+                    email: formData.get('email'),
+                    password: formData.get('password')
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(loginData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    // Store user info in localStorage
+                    localStorage.setItem('user', JSON.stringify(result.user));
+                    localStorage.setItem('token', result.token);
+                    
+                    showToast(`Welcome back, ${result.user.name}! Redirecting to dashboard...`, 'success');
+                    
+                    // Redirect to dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+                } else {
+                    showToast(result.message || 'Login failed. Please check your credentials.', 'error');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showToast('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i data-feather="log-in" class="h-5 w-5"></i><span>Sign In</span>';
+                feather.replace();
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            // Set message
+            toastMessage.textContent = message;
+            
+            // Set icon and color based on type
+            toast.classList.remove('hidden');
+            toast.classList.remove('border-green-500', 'border-red-500', 'border-blue-500');
+            
+            if (type === 'success') {
+                toast.classList.add('border-green-500');
+                toastIcon.className = 'h-6 w-6 text-green-500';
+                toastIcon.setAttribute('data-feather', 'check-circle');
+            } else if (type === 'error') {
+                toast.classList.add('border-red-500');
+                toastIcon.className = 'h-6 w-6 text-red-500';
+                toastIcon.setAttribute('data-feather', 'x-circle');
+            } else {
+                toast.classList.add('border-blue-500');
+                toastIcon.className = 'h-6 w-6 text-blue-500';
+                toastIcon.setAttribute('data-feather', 'info');
+            }
+            
+            feather.replace();
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide toast after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

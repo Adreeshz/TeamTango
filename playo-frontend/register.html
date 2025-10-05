@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - TeamTango Pune</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .role-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .role-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .role-card.selected {
+            border: 2px solid #3B82F6;
+            background: rgba(59, 130, 246, 0.1);
+        }
+        
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            min-width: 300px;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+        
+        .toast.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50">
+    <!-- Header -->
+    <nav class="relative z-10 bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center">
+                        <i data-feather="activity" class="h-8 w-8 text-blue-600"></i>
+                        <span class="ml-2 text-2xl font-bold text-gray-900">TeamTango</span>
+                    </div>
+                    <span class="text-blue-600 font-semibold">Pune</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="index.html" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i data-feather="home" class="h-5 w-5 inline mr-1"></i>
+                        Home
+                    </a>
+                    <a href="login.html" class="text-gray-600 hover:text-blue-600 transition-colors">
+                        <i data-feather="log-in" class="h-5 w-5 inline mr-1"></i>
+                        Login
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Registration Form -->
+    <div class="relative z-10 min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-2xl w-full">
+            <div class="glass-effect rounded-2xl shadow-2xl p-8">
+                <div class="text-center mb-8">
+                    <i data-feather="user-plus" class="h-16 w-16 text-blue-600 mx-auto mb-4"></i>
+                    <h2 class="text-3xl font-bold text-gray-900">Join TeamTango Pune</h2>
+                    <p class="text-gray-600 mt-2">Create your account and start your sports journey in Pune</p>
+                </div>
+
+                <!-- Role Selection -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Choose your role</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="role-card bg-white rounded-lg p-6 border-2 border-gray-200" data-role="player">
+                            <div class="text-center">
+                                <i data-feather="users" class="h-12 w-12 text-green-600 mx-auto mb-3"></i>
+                                <h4 class="text-xl font-semibold text-gray-900">Player</h4>
+                                <p class="text-gray-600 text-sm mt-2">Join teams, book venues, participate in matches across Pune</p>
+                                <ul class="text-xs text-gray-500 mt-3 text-left">
+                                    <li>• Create and join sports teams</li>
+                                    <li>• Book venues for matches</li>
+                                    <li>• Participate in tournaments</li>
+                                    <li>• Give feedback and ratings</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="role-card bg-white rounded-lg p-6 border-2 border-gray-200" data-role="venue_owner">
+                            <div class="text-center">
+                                <i data-feather="map-pin" class="h-12 w-12 text-purple-600 mx-auto mb-3"></i>
+                                <h4 class="text-xl font-semibold text-gray-900">Venue Owner</h4>
+                                <p class="text-gray-600 text-sm mt-2">List and manage your sports venues in Pune</p>
+                                <ul class="text-xs text-gray-500 mt-3 text-left">
+                                    <li>• List your sports venues</li>
+                                    <li>• Manage timeslots and pricing</li>
+                                    <li>• Handle bookings efficiently</li>
+                                    <li>• Track payments in INR</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registration Form -->
+                <form id="registrationForm" class="space-y-6">
+                    <input type="hidden" id="selectedRole" name="userType" value="">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i data-feather="user" class="h-4 w-4 inline mr-1"></i>
+                                Full Name
+                            </label>
+                            <input type="text" id="name" name="name" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="Enter your full name">
+                        </div>
+                        
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i data-feather="mail" class="h-4 w-4 inline mr-1"></i>
+                                Email Address
+                            </label>
+                            <input type="email" id="email" name="email" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="your.email@example.com">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i data-feather="phone" class="h-4 w-4 inline mr-1"></i>
+                                Phone Number
+                            </label>
+                            <input type="tel" id="phone" name="phoneNumber" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                placeholder="9876543210" pattern="[0-9]{10}">
+                        </div>
+                        
+                        <div>
+                            <label for="gender" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i data-feather="users" class="h-4 w-4 inline mr-1"></i>
+                                Gender
+                            </label>
+                            <select id="gender" name="gender" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="address" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-feather="map-pin" class="h-4 w-4 inline mr-1"></i>
+                            Address in Pune
+                        </label>
+                        <textarea id="address" name="address" rows="3" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Enter your address in Pune (e.g., Koregaon Park, Baner, Wakad, etc.)"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-feather="lock" class="h-4 w-4 inline mr-1"></i>
+                            Password
+                        </label>
+                        <input type="password" id="password" name="password" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Create a strong password" minlength="6">
+                    </div>
+                    
+                    <div>
+                        <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i data-feather="lock" class="h-4 w-4 inline mr-1"></i>
+                            Confirm Password
+                        </label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            placeholder="Confirm your password" minlength="6">
+                    </div>
+                    
+                    <div class="flex items-center">
+                        <input id="terms" name="terms" type="checkbox" required
+                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="terms" class="ml-2 block text-sm text-gray-700">
+                            I agree to the <a href="#" class="text-blue-600 hover:text-blue-500">Terms of Service</a> 
+                            and <a href="#" class="text-blue-600 hover:text-blue-500">Privacy Policy</a>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" id="registerBtn"
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i data-feather="user-plus" class="h-5 w-5"></i>
+                        <span>Create Account</span>
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-600">
+                        Already have an account? 
+                        <a href="login.html" class="text-blue-600 hover:text-blue-500 font-semibold">Sign in here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast bg-white rounded-lg shadow-lg p-4 border-l-4 hidden">
+        <div class="flex items-center">
+            <div class="flex-shrink-0">
+                <i id="toast-icon" data-feather="check-circle" class="h-6 w-6"></i>
+            </div>
+            <div class="ml-3">
+                <p id="toast-message" class="text-sm font-medium text-gray-800"></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="utils.js"></script>
+    <script>
+        // Initialize Feather Icons
+        feather.replace();
+
+        const API_BASE_URL = 'http://localhost:5000/api';
+        let selectedRole = '';
+
+        // Role selection handling
+        document.querySelectorAll('.role-card').forEach(card => {
+            card.addEventListener('click', function() {
+                // Remove selection from all cards
+                document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+                
+                // Add selection to clicked card
+                this.classList.add('selected');
+                
+                // Store selected role
+                selectedRole = this.dataset.role;
+                document.getElementById('selectedRole').value = selectedRole;
+                
+                // Update form title based on selection
+                const title = document.querySelector('h2');
+                if (selectedRole === 'player') {
+                    title.textContent = 'Join as a Player in Pune';
+                } else {
+                    title.textContent = 'Register Your Venue in Pune';
+                }
+            });
+        });
+
+        // Form submission
+        document.getElementById('registrationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!selectedRole) {
+                showToast('Please select your role (Player or Venue Owner)', 'error');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            
+            // Password validation
+            if (password !== confirmPassword) {
+                showToast('Passwords do not match', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showToast('Password must be at least 6 characters long', 'error');
+                return;
+            }
+            
+            const registerBtn = document.getElementById('registerBtn');
+            registerBtn.disabled = true;
+            registerBtn.innerHTML = '<i data-feather="loader" class="h-5 w-5 animate-spin"></i><span>Creating Account...</span>';
+            feather.replace();
+            
+            try {
+                const userData = {
+                    name: formData.get('name'),
+                    email: formData.get('email'),
+                    gender: formData.get('gender'),
+                    password: formData.get('password'),
+                    phoneNumber: formData.get('phoneNumber'),
+                    address: formData.get('address'),
+                    userType: selectedRole
+                };
+                
+                const response = await fetch(`${API_BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showToast(`Account created successfully! Welcome to TeamTango Pune as a ${selectedRole === 'player' ? 'Player' : 'Venue Owner'}!`, 'success');
+                    
+                    // Clear form
+                    this.reset();
+                    document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+                    selectedRole = '';
+                    document.getElementById('selectedRole').value = '';
+                    
+                    // Redirect to login after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = 'login.html';
+                    }, 3000);
+                } else {
+                    showToast(result.message || 'Registration failed. Please try again.', 'error');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showToast('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                registerBtn.disabled = false;
+                registerBtn.innerHTML = '<i data-feather="user-plus" class="h-5 w-5"></i><span>Create Account</span>';
+                feather.replace();
+            }
+        });
+
+        // Toast notification function
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+            
+            // Set message
+            toastMessage.textContent = message;
+            
+            // Set icon and color based on type
+            toast.classList.remove('hidden');
+            toast.classList.remove('border-green-500', 'border-red-500', 'border-blue-500');
+            
+            if (type === 'success') {
+                toast.classList.add('border-green-500');
+                toastIcon.className = 'h-6 w-6 text-green-500';
+                toastIcon.setAttribute('data-feather', 'check-circle');
+            } else if (type === 'error') {
+                toast.classList.add('border-red-500');
+                toastIcon.className = 'h-6 w-6 text-red-500';
+                toastIcon.setAttribute('data-feather', 'x-circle');
+            } else {
+                toast.classList.add('border-blue-500');
+                toastIcon.className = 'h-6 w-6 text-blue-500';
+                toastIcon.setAttribute('data-feather', 'info');
+            }
+            
+            feather.replace();
+            
+            // Show toast
+            setTimeout(() => toast.classList.add('show'), 100);
+            
+            // Hide toast after 5 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 5000);
+        }
+
+        // Phone number formatting
+        document.getElementById('phone').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            e.target.value = value;
+        });
+    </script>
+</body>
+</html>

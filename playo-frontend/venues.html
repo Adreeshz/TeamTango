@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Venues - TeamTango</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex-shrink-0 flex items-center">
+                        <i data-feather="activity" class="text-primary-600 h-8 w-8"></i>
+                        <span class="ml-2 text-xl font-bold text-primary-600">TeamTango</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
+                        <a href="teams.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">My Teams</a>
+                        <a href="venues.html" class="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Venues</a>
+                        <a href="matches.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Matches</a>
+                    </div>
+                </div>
+                <div class="flex items-center">
+                    <button class="bg-white p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i data-feather="bell"></i>
+                    </button>
+                    <div class="ml-3 relative">
+                        <button type="button" class="bg-white rounded-full flex text-sm focus:outline-none">
+                            <img class="h-8 w-8 rounded-full" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&h=200&fit=crop&crop=face" alt="">
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Header -->
+        <div class="md:flex md:items-center md:justify-between mb-8">
+            <div class="flex-1 min-w-0">
+                <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                    Find Venues
+                </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Discover and book the perfect venue for your next match.
+                </p>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white p-6 rounded-lg shadow mb-8">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div>
+                    <label for="sport-filter" class="block text-sm font-medium text-gray-700 mb-2">Sport</label>
+                    <select id="sport-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">All Sports</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="location-filter" class="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                    <input type="text" id="location-filter" placeholder="Enter area (e.g., Baner, Koregaon Park)" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div>
+                    <label for="price-filter" class="block text-sm font-medium text-gray-700 mb-2">Max Price</label>
+                    <input type="number" id="price-filter" placeholder="Max ₹/hour (e.g., 150)" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                </div>
+                <div class="flex items-end">
+                    <button id="search-btn" class="w-full bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                        Search Venues
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Venues Grid -->
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3" id="venues-grid">
+            <!-- Venues will be loaded here dynamically -->
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="hidden text-center py-12">
+            <i data-feather="map-pin" class="mx-auto h-12 w-12 text-gray-400"></i>
+            <h3 class="mt-2 text-sm font-medium text-gray-900">No venues found</h3>
+            <p class="mt-1 text-sm text-gray-500">Try adjusting your search criteria.</p>
+        </div>
+    </div>
+
+    <!-- Booking Modal -->
+    <div id="booking-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-medium text-gray-900">Book Venue</h3>
+                    <button id="close-booking-modal" class="text-gray-400 hover:text-gray-600">
+                        <i data-feather="x"></i>
+                    </button>
+                </div>
+                <div id="venue-details" class="mb-4">
+                    <!-- Venue details will be populated here -->
+                </div>
+                <form id="booking-form">
+                    <div class="mb-4">
+                        <label for="booking-date" class="block text-sm font-medium text-gray-700 mb-2">Date</label>
+                        <input type="date" id="booking-date" name="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                    </div>
+                    <div class="mb-4">
+                        <label for="booking-time" class="block text-sm font-medium text-gray-700 mb-2">Time Slot</label>
+                        <select id="booking-time" name="timeSlot" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select time (IST)</option>
+                            <option value="06:00">6:00 AM (Early Morning)</option>
+                            <option value="07:00">7:00 AM (Morning)</option>
+                            <option value="08:00">8:00 AM (Morning)</option>
+                            <option value="09:00">9:00 AM (Morning)</option>
+                            <option value="10:00">10:00 AM</option>
+                            <option value="11:00">11:00 AM</option>
+                            <option value="15:00">3:00 PM (Afternoon)</option>
+                            <option value="16:00">4:00 PM (Afternoon)</option>
+                            <option value="17:00">5:00 PM (Evening)</option>
+                            <option value="18:00">6:00 PM (Evening)</option>
+                            <option value="19:00">7:00 PM (Evening)</option>
+                            <option value="20:00">8:00 PM (Night)</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label for="team-select" class="block text-sm font-medium text-gray-700 mb-2">Team</label>
+                        <select id="team-select" name="teamId" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select team</option>
+                        </select>
+                    </div>
+                    <input type="hidden" id="venue-id" name="venueId">
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" id="cancel-booking-btn" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-200 rounded-md hover:bg-gray-300">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-primary-600 rounded-md hover:bg-primary-700">
+                            Book Venue
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        feather.replace();
+        
+        const API_BASE_URL = 'http://localhost:5000/api';
+
+        // Sample venue data - All Pune-based with affordable Indian pricing
+        const sampleVenues = [
+            {
+                VenueID: 1,
+                VenueName: "Shree Shiv Chhatrapati Sports Complex",
+                Location: "Balewadi, Pune, Maharashtra",
+                PricePerHour: 120,
+                SportType: "Basketball",
+                Description: "Modern indoor basketball court with professional lighting and air conditioning. Popular with local college teams.",
+                Rating: 4.8,
+                Image: "images/coep.jpg"
+            },
+            {
+                VenueID: 2,
+                VenueName: "Pune University Football Ground",
+                Location: "University Road, Pune, Maharashtra",
+                PricePerHour: 150,
+                SportType: "Football",
+                Description: "Full-size football maidan with natural grass, floodlights available for evening matches",
+                Rating: 4.6,
+                Image: "images/fergusson.jpg"
+            },
+            {
+                VenueID: 3,
+                VenueName: "Deccan Gymkhana Tennis Courts",
+                Location: "Deccan Gymkhana, Pune, Maharashtra",
+                PricePerHour: 130,
+                SportType: "Tennis",
+                Description: "Premium tennis courts with synthetic surface, coaching available from certified Indian coaches",
+                Rating: 4.9,
+                Image: "images/deccan.jpg"
+            },
+            {
+                VenueID: 4,
+                VenueName: "Sanas Sports Academy",
+                Location: "Kothrud, Pune, Maharashtra",
+                PricePerHour: 100,
+                SportType: "Badminton",
+                Description: "Air-conditioned badminton courts with wooden flooring, racket rental available. Popular with IT professionals.",
+                Rating: 4.5,
+                Image: "images/badminton.png"
+            },
+            {
+                VenueID: 5,
+                VenueName: "Maharashtra Cricket Association Ground",
+                Location: "Gahunje, Pune, Maharashtra",
+                PricePerHour: 140,
+                SportType: "Cricket",
+                Description: "Professional cricket maidan with turf wicket and practice nets. Home to Pune Warriors training sessions.",
+                Rating: 4.7,
+                Image: "images/mcacricket.jpg"
+            },
+            {
+                VenueID: 6,
+                VenueName: "Fergusson College Sports Complex",
+                Location: "Shivajinagar, Pune, Maharashtra",
+                PricePerHour: 110,
+                SportType: "Volleyball",
+                Description: "Indoor volleyball court with proper marking and net setup. Used for inter-college tournaments.",
+                Rating: 4.4,
+                Image: "https://images.unsplash.com/photo-1612872087720-bb876e2e67d1?w=400&h=300&fit=crop"
+            },
+            {
+                VenueID: 7,
+                VenueName: "Bharati Vidyapeeth Table Tennis Hall",
+                Location: "Katraj, Pune, Maharashtra", 
+                PricePerHour: 80,
+                SportType: "Table Tennis",
+                Description: "Well-maintained table tennis facility with 8 tables, popular among students and office workers.",
+                Rating: 4.3,
+                Image: "https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=400&h=300&fit=crop"
+            },
+            {
+                VenueID: 8,
+                VenueName: "Aundh Sports Club Swimming Pool",
+                Location: "Aundh, Pune, Maharashtra",
+                PricePerHour: 120,
+                SportType: "Swimming",
+                Description: "Olympic-size swimming pool with trained lifeguards. Separate timings for men and women available.",
+                Rating: 4.6,
+                Image: "https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400&h=300&fit=crop"
+            }
+        ];
+
+        const sampleSports = [
+            { SportID: 1, SportName: "Cricket" },
+            { SportID: 2, SportName: "Football" },
+            { SportID: 3, SportName: "Badminton" },
+            { SportID: 4, SportName: "Basketball" },
+            { SportID: 5, SportName: "Tennis" },
+            { SportID: 6, SportName: "Volleyball" },
+            { SportID: 7, SportName: "Table Tennis" },
+            { SportID: 8, SportName: "Swimming" },
+            { SportID: 9, SportName: "Kabaddi" },
+            { SportID: 10, SportName: "Hockey" }
+        ];
+
+        const sampleTeams = [
+            { TeamID: 1, TeamName: "Pune Warriors" },
+            { TeamID: 2, TeamName: "Mumbai Indians FC" },
+            { TeamID: 3, TeamName: "Deccan Chargers" },
+            { TeamID: 4, TeamName: "Maratha Mavericks" },
+            { TeamID: 5, TeamName: "Sahyadri Strikers" },
+            { TeamID: 6, TeamName: "Konkan Kings" }
+        ];
+
+        let allVenues = [];
+        let filteredVenues = [];
+
+        // Load venues
+        async function loadVenues() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/venues`);
+                const venues = await response.json();
+                allVenues = venues;
+                filteredVenues = venues;
+                displayVenues(venues);
+            } catch (error) {
+                console.log('Using sample venue data');
+                allVenues = sampleVenues;
+                filteredVenues = sampleVenues;
+                displayVenues(sampleVenues);
+            }
+        }
+
+        // Display venues
+        function displayVenues(venues) {
+            const venuesGrid = document.getElementById('venues-grid');
+            const emptyState = document.getElementById('empty-state');
+
+            if (venues.length === 0) {
+                venuesGrid.classList.add('hidden');
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            venuesGrid.classList.remove('hidden');
+
+            venuesGrid.innerHTML = venues.map(venue => `
+                <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+                    <div class="aspect-w-16 aspect-h-9">
+                        <img class="w-full h-48 object-cover" src="${venue.Image}" alt="${venue.VenueName}">
+                    </div>
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h3 class="text-lg font-medium text-gray-900 truncate">${venue.VenueName}</h3>
+                            <div class="flex items-center">
+                                <i data-feather="star" class="h-4 w-4 text-yellow-400 fill-current"></i>
+                                <span class="ml-1 text-sm text-gray-600">${venue.Rating}</span>
+                            </div>
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500 mb-2">
+                            <i data-feather="map-pin" class="h-4 w-4 mr-1"></i>
+                            ${venue.Location}
+                        </div>
+                        <div class="flex items-center text-sm text-gray-500 mb-2">
+                            <i data-feather="activity" class="h-4 w-4 mr-1"></i>
+                            ${venue.SportType}
+                        </div>
+                        <p class="text-sm text-gray-600 mb-4">${venue.Description}</p>
+                        <div class="flex items-center justify-between">
+                            <div class="text-lg font-bold text-primary-600">
+                                ₹${venue.PricePerHour}/hour
+                            </div>
+                            <button onclick="openBookingModal(${venue.VenueID})" class="bg-primary-600 text-white px-4 py-2 rounded-md hover:bg-primary-700 text-sm font-medium">
+                                Book Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            feather.replace();
+        }
+
+        // Load sports for filter
+        async function loadSports() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/sports`);
+                const sports = await response.json();
+                populateSportsFilter(sports);
+            } catch (error) {
+                console.log('Using sample sports data');
+                populateSportsFilter(sampleSports);
+            }
+        }
+
+        // Populate sports filter
+        function populateSportsFilter(sports) {
+            const sportFilter = document.getElementById('sport-filter');
+            sportFilter.innerHTML = '<option value="">All Sports</option>';
+            
+            sports.forEach(sport => {
+                const option = document.createElement('option');
+                option.value = sport.SportName;
+                option.textContent = sport.SportName;
+                sportFilter.appendChild(option);
+            });
+        }
+
+        // Load teams for booking
+        async function loadTeams() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/teams`);
+                const teams = await response.json();
+                populateTeamsSelect(teams);
+            } catch (error) {
+                console.log('Using sample teams data');
+                populateTeamsSelect(sampleTeams);
+            }
+        }
+
+        // Populate teams select
+        function populateTeamsSelect(teams) {
+            const teamSelect = document.getElementById('team-select');
+            teamSelect.innerHTML = '<option value="">Select team</option>';
+            
+            teams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.TeamID;
+                option.textContent = team.TeamName;
+                teamSelect.appendChild(option);
+            });
+        }
+
+        // Filter venues
+        function filterVenues() {
+            const sportFilter = document.getElementById('sport-filter').value;
+            const locationFilter = document.getElementById('location-filter').value.toLowerCase();
+            const priceFilter = document.getElementById('price-filter').value;
+
+            filteredVenues = allVenues.filter(venue => {
+                const matchesSport = !sportFilter || venue.SportType === sportFilter;
+                const matchesLocation = !locationFilter || venue.Location.toLowerCase().includes(locationFilter);
+                const matchesPrice = !priceFilter || venue.PricePerHour <= parseInt(priceFilter);
+
+                return matchesSport && matchesLocation && matchesPrice;
+            });
+
+            displayVenues(filteredVenues);
+        }
+
+        // Search button event
+        document.getElementById('search-btn').addEventListener('click', filterVenues);
+
+        // Filter inputs event listeners
+        document.getElementById('sport-filter').addEventListener('change', filterVenues);
+        document.getElementById('location-filter').addEventListener('input', filterVenues);
+        document.getElementById('price-filter').addEventListener('input', filterVenues);
+
+        // Booking modal functionality
+        const bookingModal = document.getElementById('booking-modal');
+        const closeBookingModalBtn = document.getElementById('close-booking-modal');
+        const cancelBookingBtn = document.getElementById('cancel-booking-btn');
+        const bookingForm = document.getElementById('booking-form');
+
+        function openBookingModal(venueId) {
+            const venue = allVenues.find(v => v.VenueID == venueId);
+            if (!venue) return;
+
+            document.getElementById('venue-id').value = venueId;
+            document.getElementById('venue-details').innerHTML = `
+                <div class="border rounded-lg p-4 bg-gray-50">
+                    <h4 class="font-medium text-gray-900">${venue.VenueName}</h4>
+                    <p class="text-sm text-gray-600">${venue.Location} • ${venue.SportType}</p>
+                    <p class="text-lg font-bold text-primary-600 mt-2">₹${venue.PricePerHour}/hour</p>
+                </div>
+            `;
+
+            // Set minimum date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('booking-date').setAttribute('min', today);
+
+            bookingModal.classList.remove('hidden');
+        }
+
+        closeBookingModalBtn.addEventListener('click', () => {
+            bookingModal.classList.add('hidden');
+            bookingForm.reset();
+        });
+
+        cancelBookingBtn.addEventListener('click', () => {
+            bookingModal.classList.add('hidden');
+            bookingForm.reset();
+        });
+
+        // Close modal when clicking outside
+        bookingModal.addEventListener('click', (e) => {
+            if (e.target === bookingModal) {
+                bookingModal.classList.add('hidden');
+                bookingForm.reset();
+            }
+        });
+
+        // Book venue
+        bookingForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const formData = new FormData(bookingForm);
+            const bookingData = {
+                VenueID: formData.get('venueId'),
+                TeamID: formData.get('teamId'),
+                BookingDate: formData.get('date'),
+                TimeSlot: formData.get('timeSlot'),
+                UserID: 1 // Assuming logged in user ID
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/bookings/create`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(bookingData)
+                });
+
+                if (response.ok) {
+                    alert('Venue booked successfully!');
+                    bookingModal.classList.add('hidden');
+                    bookingForm.reset();
+                } else {
+                    alert('Error booking venue');
+                }
+            } catch (error) {
+                console.log('Error booking venue:', error);
+                alert('Booking request submitted! (Demo mode)');
+                bookingModal.classList.add('hidden');
+                bookingForm.reset();
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadVenues();
+            loadSports();
+            loadTeams();
+        });
+    </script>
+</body>
+</html>
