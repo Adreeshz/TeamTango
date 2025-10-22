@@ -5,31 +5,31 @@ const db = require('../utils/db');
 router.get('/', (req, res) => {
     const query = `
         SELECT m.MatchID, 
+               m.MatchTitle,
                t1.TeamName as Team1, 
                CASE 
+                   WHEN t2.TeamName = 'External Team' THEN 'External Team'
                    WHEN t2.TeamName IS NOT NULL THEN t2.TeamName 
                    ELSE 'External Team' 
                END as Team2,
                v.VenueName as Venue,
-               DATE(ts.StartTime) as MatchDate,
-               TIME(ts.StartTime) as MatchTime,
+               m.MatchDate,
+               m.MatchTime,
+               m.MatchStatus as Status,
                CASE 
-                   WHEN ts.StartTime > NOW() THEN 'Upcoming'
-                   WHEN m.Result IS NOT NULL THEN 'Completed'
-                   ELSE 'Ongoing'
-               END as Status,
-               CASE 
-                   WHEN m.Result = m.Team1ID THEN 'Won'
-                   WHEN m.Result IS NOT NULL THEN 'Lost'
+                   WHEN m.MatchStatus = 'Completed' AND m.Team1Score > m.Team2Score THEN 'Team1 Won'
+                   WHEN m.MatchStatus = 'Completed' AND m.Team2Score > m.Team1Score THEN 'Team2 Won'
+                   WHEN m.MatchStatus = 'Completed' AND m.Team1Score = m.Team2Score THEN 'Draw'
                    ELSE NULL
                END as Result,
-               'League match in Pune' as Description
-        FROM matches m
-        JOIN teams t1 ON m.Team1ID = t1.TeamID
-        LEFT JOIN teams t2 ON m.Team2ID = t2.TeamID
-        JOIN timeslots ts ON m.SlotID = ts.SlotID
-        JOIN venues v ON ts.VenueID = v.VenueID
-        ORDER BY ts.StartTime DESC
+               m.Team1Score,
+               m.Team2Score,
+               CONCAT(m.MatchTitle, ' in ', v.VenueName) as Description
+        FROM Matches m
+        JOIN Teams t1 ON m.Team1ID = t1.TeamID
+        LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+        JOIN Venues v ON m.VenueID = v.VenueID
+        ORDER BY m.MatchDate DESC, m.MatchTime DESC
     `;
     db.query(query, (err, results) => {
         if(err) return res.status(500).json({ error: err });
@@ -45,25 +45,81 @@ router.get('/:id', (req, res) => {
 });
 
 router.post('/create', (req, res) => {
-    const { Team1ID, Team2ID, SlotID, SportID, Result } = req.body;
-    db.query('INSERT INTO Matches (Team1ID, Team2ID, SlotID, SportID, Result) VALUES (?, ?, ?, ?, ?)',
-        [Team1ID, Team2ID, SlotID, SportID, Result],
+    const { MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime } = req.body;
+    
+    console.log('Creating match with data:', {
+        MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime
+    });
+    
+    // Validate required fields
+    if (!MatchTitle || !Team1ID || !Team2ID || !VenueID || !MatchDate || !MatchTime) {
+        return res.status(400).json({ 
+            error: 'Missing required fields',
+            message: 'All fields (MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime) are required'
+        });
+    }
+    
+    db.query('INSERT INTO Matches (MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime, Team1Score, Team2Score, MatchStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime, 0, 0, 'Scheduled'],
         (err, result) => {
-            if(err) return res.status(500).json({ error: err });
+            if(err) {
+                console.error('Database error creating match:', err);
+                return res.status(500).json({ 
+                    error: err.message || err,
+                    message: 'Failed to create match'
+                });
+            }
+            console.log('Match created successfully with ID:', result.insertId);
             res.json({ message: 'Match created', MatchID: result.insertId });
         }
     );
 });
 
 router.put('/update/:id', (req, res) => {
-    const { Team1ID, Team2ID, SlotID, SportID, Result } = req.body;
-    db.query('UPDATE Matches SET Team1ID=?, Team2ID=?, SlotID=?, SportID=?, Result=? WHERE MatchID=?',
-        [Team1ID, Team2ID, SlotID, SportID, Result, req.params.id],
-        (err, result) => {
-            if(err) return res.status(500).json({ error: err });
-            res.json({ message: 'Match updated' });
-        }
-    );
+    const matchId = req.params.id;
+    console.log('Match update requested for ID:', matchId, 'payload:', req.body);
+
+    // For now, handle the most common case: status update
+    if (req.body.MatchStatus) {
+        const newStatus = req.body.MatchStatus;
+        console.log(`Updating match ${matchId} status to: ${newStatus}`);
+        
+        db.query('UPDATE Matches SET MatchStatus = ? WHERE MatchID = ?', [newStatus, matchId], (err, result) => {
+            if (err) {
+                console.error('Database error updating match status:', err);
+                return res.status(500).json({ error: err.message || err, message: 'Failed to update match status' });
+            }
+
+            if (result.affectedRows === 0) {
+                console.log('No match found with ID:', matchId);
+                return res.status(404).json({ message: 'Match not found' });
+            }
+
+            console.log('Match status updated successfully:', matchId, 'to', newStatus);
+            return res.json({ message: 'Match updated successfully' });
+        });
+    } else {
+        // For full match updates
+        const { MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime, Team1Score, Team2Score, MatchStatus } = req.body;
+        
+        db.query(
+            'UPDATE Matches SET MatchTitle=?, Team1ID=?, Team2ID=?, VenueID=?, MatchDate=?, MatchTime=?, Team1Score=?, Team2Score=?, MatchStatus=? WHERE MatchID=?',
+            [MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime, Team1Score || 0, Team2Score || 0, MatchStatus || 'Scheduled', matchId],
+            (err, result) => {
+                if (err) {
+                    console.error('Database error updating full match:', err);
+                    return res.status(500).json({ error: err.message || err, message: 'Failed to update match' });
+                }
+                
+                if (result.affectedRows === 0) {
+                    return res.status(404).json({ message: 'Match not found' });
+                }
+                
+                console.log('Match updated successfully:', matchId);
+                return res.json({ message: 'Match updated successfully' });
+            }
+        );
+    }
 });
 
 router.delete('/delete/:id', (req, res) => {

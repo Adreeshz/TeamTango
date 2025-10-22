@@ -76,14 +76,13 @@ class PermissionManager {
                     r.RoleID,
                     CASE 
                         WHEN r.RoleID IN (1, 2) THEN 'Regular User'
-                        WHEN r.RoleID IN (3, 4) THEN 'Admin User'
+                        WHEN r.RoleID = 3 THEN 'Admin User'
                         ELSE 'Unknown'
                     END as UserType,
                     CASE 
                         WHEN r.RoleID = 1 THEN 'Player - Can create teams, make bookings, join matches'
                         WHEN r.RoleID = 2 THEN 'Venue Owner - Can manage venues, timeslots, view bookings'
                         WHEN r.RoleID = 3 THEN 'Website Admin - Can moderate content, manage users'
-                        WHEN r.RoleID = 4 THEN 'Super Admin - Full system access'
                         ELSE 'Limited access'
                     END as AccessDescription
                 FROM Users u

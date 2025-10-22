@@ -34,6 +34,45 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; }
     </style>
+    
+    <!-- Authentication Check -->
+    <script>
+        // Check authentication on page load
+        function checkAuthentication() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || !user.userId) {
+                // Show loading message briefly then redirect
+                document.body.innerHTML = `
+                    <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div class="text-center">
+                            <i data-feather="lock" class="h-16 w-16 text-red-500 mx-auto mb-4"></i>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+                            <p class="text-gray-600 mb-4">You need to log in to access matches.</p>
+                            <p class="text-sm text-gray-500">Redirecting to login page...</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Replace feather icons and redirect after 2 seconds
+                if (typeof feather !== 'undefined') feather.replace();
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Check auth immediately when script loads
+        if (!checkAuthentication()) {
+            // Stop further script execution if not authenticated
+            throw new Error('Authentication required');
+        }
+    </script>
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
@@ -46,7 +85,7 @@
                         <span class="ml-2 text-xl font-bold text-primary-600">TeamTango</span>
                     </a>
                     <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
-                        <a href="dashboard.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
+                        <a href="player-dashboard.html" onclick="redirectToDashboard()" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
                         <a href="teams.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">My Teams</a>
                         <a href="venues.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Venues</a>
                         <a href="matches.html" class="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Matches</a>
@@ -146,6 +185,12 @@
                 </div>
                 <form id="match-form">
                     <div class="mb-4">
+                        <label for="match-sport" class="block text-sm font-medium text-gray-700 mb-2">Sport</label>
+                        <select id="match-sport" name="sport" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select sport</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
                         <label for="match-team1" class="block text-sm font-medium text-gray-700 mb-2">Your Team</label>
                         <select id="match-team1" name="team1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
                             <option value="">Select your team</option>
@@ -153,7 +198,9 @@
                     </div>
                     <div class="mb-4">
                         <label for="match-team2" class="block text-sm font-medium text-gray-700 mb-2">Opponent Team</label>
-                        <input type="text" id="match-team2" name="team2" placeholder="Enter opponent team name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                        <select id="match-team2" name="team2" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500" required>
+                            <option value="">Select opponent team</option>
+                        </select>
                     </div>
                     <div class="mb-4">
                         <label for="match-venue" class="block text-sm font-medium text-gray-700 mb-2">Venue</label>
@@ -285,12 +332,26 @@
         // Load matches
         async function loadMatches() {
             try {
-                const response = await fetch(`${API_BASE_URL}/matches`);
+                console.log('Loading matches from API...');
+                const token = localStorage.getItem('token');
+                const response = await fetch(`${API_BASE_URL}/matches?_t=${Date.now()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const matches = await response.json();
+                console.log('Matches loaded:', matches);
                 displayMatches(matches);
             } catch (error) {
-                console.log('Using sample match data');
-                displayMatches(sampleMatches);
+                console.error('Error loading matches:', error);
+                // Display empty state instead of sample data
+                displayMatches([]);
             }
         }
 
@@ -300,9 +361,12 @@
             const completedContainer = document.getElementById('completed-matches');
             const cancelledContainer = document.getElementById('cancelled-matches');
 
-            const upcoming = allMatches.filter(match => match.Status === 'Upcoming');
+            // Backend returns Status field mapped from MatchStatus
+            const upcoming = allMatches.filter(match => match.Status === 'Scheduled' || match.Status === 'Upcoming');
             const completed = allMatches.filter(match => match.Status === 'Completed');
             const cancelled = allMatches.filter(match => match.Status === 'Cancelled');
+
+            console.log('Filtered matches:', { upcoming, completed, cancelled });
 
             upcomingContainer.innerHTML = renderMatches(upcoming, 'upcoming');
             completedContainer.innerHTML = renderMatches(completed, 'completed');
@@ -389,48 +453,120 @@
         }
 
         // Load teams and venues for the form
-        async function loadTeamsAndVenues() {
+        // Global storage for all data
+        let allTeams = [];
+        let allVenues = [];
+        let allSports = [];
+
+        async function loadSportsTeamsAndVenues() {
             try {
-                const [teamsResponse, venuesResponse] = await Promise.all([
+                const [sportsResponse, teamsResponse, venuesResponse] = await Promise.all([
+                    fetch(`${API_BASE_URL}/sports`),
                     fetch(`${API_BASE_URL}/teams`),
                     fetch(`${API_BASE_URL}/venues`)
                 ]);
                 
-                const teams = await teamsResponse.json();
-                const venues = await venuesResponse.json();
-                
-                populateTeamsSelect(teams);
-                populateVenuesSelect(venues);
+                if (sportsResponse.ok && teamsResponse.ok && venuesResponse.ok) {
+                    const sportsData = await sportsResponse.json();
+                    const teamsData = await teamsResponse.json();
+                    const venuesData = await venuesResponse.json();
+                    
+                    // Handle different response structures
+                    allSports = sportsData.sports || sportsData;
+                    allTeams = teamsData.teams || teamsData;
+                    allVenues = venuesData.venues || venuesData;
+                    
+                    console.log('Loaded sports:', allSports.length);
+                    console.log('Loaded teams:', allTeams.length);
+                    console.log('Loaded venues:', allVenues.length);
+                    
+                    populateSportsSelect();
+                    populateVenuesSelect();
+                } else {
+                    console.error('Failed to load data');
+                    // Use sample data as fallback
+                    populateVenuesSelect(sampleVenues);
+                }
             } catch (error) {
-                console.log('Using sample data for teams and venues');
-                populateTeamsSelect(sampleTeams);
+                console.error('Error loading data:', error);
+                // Use sample data as fallback
                 populateVenuesSelect(sampleVenues);
             }
         }
 
-        // Populate teams select
-        function populateTeamsSelect(teams) {
-            const teamSelect = document.getElementById('match-team1');
-            teamSelect.innerHTML = '<option value="">Select your team</option>';
+        // Populate sports select
+        function populateSportsSelect() {
+            const sportSelect = document.getElementById('match-sport');
+            sportSelect.innerHTML = '<option value="">Select sport</option>';
             
-            teams.forEach(team => {
+            allSports.forEach(sport => {
                 const option = document.createElement('option');
-                option.value = team.TeamID;
-                option.textContent = team.TeamName;
-                teamSelect.appendChild(option);
+                option.value = sport.SportID;
+                option.textContent = sport.SportName;
+                sportSelect.appendChild(option);
+            });
+        }
+
+        // Populate teams select based on selected sport
+        function populateTeamsSelect(sportId = null) {
+            const team1Select = document.getElementById('match-team1');
+            const team2Select = document.getElementById('match-team2');
+            
+            // Clear both dropdowns
+            team1Select.innerHTML = '<option value="">Select your team</option>';
+            team2Select.innerHTML = '<option value="">Select opponent team</option>';
+            
+            if (!sportId) return;
+            
+            // Filter teams by sport
+            const filteredTeams = allTeams.filter(team => team.SportID == sportId);
+            
+            filteredTeams.forEach(team => {
+                // Add to Team 1 dropdown
+                const option1 = document.createElement('option');
+                option1.value = team.TeamID;
+                option1.textContent = team.TeamName;
+                team1Select.appendChild(option1);
+                
+                // Add to Team 2 dropdown
+                const option2 = document.createElement('option');
+                option2.value = team.TeamID;
+                option2.textContent = team.TeamName;
+                team2Select.appendChild(option2);
             });
         }
 
         // Populate venues select
-        function populateVenuesSelect(venues) {
+        function populateVenuesSelect(venues = null) {
             const venueSelect = document.getElementById('match-venue');
             venueSelect.innerHTML = '<option value="">Select venue</option>';
             
-            venues.forEach(venue => {
+            const venueList = venues || allVenues;
+            venueList.forEach(venue => {
                 const option = document.createElement('option');
                 option.value = venue.VenueID;
                 option.textContent = venue.VenueName;
                 venueSelect.appendChild(option);
+            });
+        }
+
+        // Update Team 2 options (exclude selected Team 1)
+        function updateTeam2Options(sportId, excludeTeamId) {
+            const team2Select = document.getElementById('match-team2');
+            team2Select.innerHTML = '<option value="">Select opponent team</option>';
+            
+            if (!sportId) return;
+            
+            // Filter teams by sport and exclude Team 1
+            const filteredTeams = allTeams.filter(team => 
+                team.SportID == sportId && team.TeamID != excludeTeamId
+            );
+            
+            filteredTeams.forEach(team => {
+                const option = document.createElement('option');
+                option.value = team.TeamID;
+                option.textContent = team.TeamName;
+                team2Select.appendChild(option);
             });
         }
 
@@ -467,86 +603,153 @@
             }
         });
 
+        // Handle sport selection change
+        document.getElementById('match-sport').addEventListener('change', (e) => {
+            const selectedSportId = e.target.value;
+            populateTeamsSelect(selectedSportId);
+        });
+
+        // Handle Team 1 selection change to update Team 2 options
+        document.getElementById('match-team1').addEventListener('change', (e) => {
+            const selectedTeam1Id = e.target.value;
+            const selectedSportId = document.getElementById('match-sport').value;
+            updateTeam2Options(selectedSportId, selectedTeam1Id);
+        });
+
         // Schedule match
         matchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
             const formData = new FormData(matchForm);
+            
+            // Get team names for match title
+            const team1Id = parseInt(formData.get('team1'));
+            const team2Id = parseInt(formData.get('team2'));
+            
+            // Validation: Teams cannot play against themselves
+            if (team1Id === team2Id) {
+                alert('Please select different teams for Team 1 and Team 2');
+                return;
+            }
+            
+            const team1Name = allTeams.find(t => t.TeamID === team1Id)?.TeamName || 'Team 1';
+            const team2Name = allTeams.find(t => t.TeamID === team2Id)?.TeamName || 'Team 2';
+            
             const matchData = {
-                Team1ID: formData.get('team1'),
-                Team2Name: formData.get('team2'),
-                VenueID: formData.get('venue'),
+                MatchTitle: `${team1Name} vs ${team2Name}`,
+                Team1ID: team1Id,
+                Team2ID: team2Id,
+                VenueID: parseInt(formData.get('venue')),
                 MatchDate: formData.get('date'),
-                MatchTime: formData.get('time'),
-                Description: formData.get('description'),
-                UserID: 1 // Assuming logged in user ID
+                MatchTime: formData.get('time')
             };
 
+            console.log('Sending match data:', matchData);
+
             try {
+                const token = localStorage.getItem('token');
                 const response = await fetch(`${API_BASE_URL}/matches/create`, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify(matchData)
                 });
 
                 if (response.ok) {
+                    const result = await response.json();
+                    console.log('Match scheduled successfully:', result);
                     alert('Match scheduled successfully!');
                     matchModal.classList.add('hidden');
                     matchForm.reset();
                     loadMatches(); // Reload matches
                 } else {
-                    alert('Error scheduling match');
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                    console.error('Error scheduling match:', response.status, errorData);
+                    alert('Error scheduling match: ' + (errorData.message || response.status));
                 }
             } catch (error) {
-                console.log('Error scheduling match:', error);
-                alert('Match scheduled successfully! (Demo mode)');
-                matchModal.classList.add('hidden');
-                matchForm.reset();
-                
-                // For demo purposes, add to sample data
-                const newMatch = {
-                    MatchID: Date.now(),
-                    Team1: sampleTeams.find(t => t.TeamID == matchData.Team1ID)?.TeamName || 'Unknown',
-                    Team2: matchData.Team2Name,
-                    Venue: sampleVenues.find(v => v.VenueID == matchData.VenueID)?.VenueName || 'Unknown',
-                    MatchDate: matchData.MatchDate,
-                    MatchTime: matchData.MatchTime,
-                    Status: 'Upcoming',
-                    Description: matchData.Description,
-                    Result: null
-                };
-                sampleMatches.push(newMatch);
-                displayMatches(sampleMatches);
+                console.error('Error scheduling match:', error);
+                alert('Error scheduling match: ' + error.message);
             }
         });
 
         // Match actions
         function editMatch(matchId) {
-            alert(`Edit match ${matchId} (Feature coming soon)`);
+            console.log('Edit match clicked for ID:', matchId);
+            // TODO: Implement match editing functionality
         }
 
-        function cancelMatch(matchId) {
-            if (confirm('Are you sure you want to cancel this match?')) {
-                // Update match status in sample data
-                const match = sampleMatches.find(m => m.MatchID == matchId);
-                if (match) {
-                    match.Status = 'Cancelled';
-                    displayMatches(sampleMatches);
+        async function cancelMatch(matchId) {
+            if (!confirm('Are you sure you want to cancel this match?')) return;
+
+            const btn = event?.target;
+            if (btn) btn.setAttribute('disabled', 'disabled');
+
+            try {
+                const token = localStorage.getItem('token');
+                console.log('Cancel match - token present?', !!token);
+
+                const response = await fetch(`${API_BASE_URL}/matches/update/${matchId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ MatchStatus: 'Cancelled' })
+                });
+
+                if (response.ok) {
+                    alert('Match cancelled successfully');
+                    loadMatches(); // Reload matches to show updated status
+                } else {
+                    const text = await response.text();
+                    let parsed = null;
+                    try { parsed = JSON.parse(text); } catch(e) { parsed = { message: text }; }
+                    console.error('Cancel failed:', response.status, parsed);
+                    alert('Error cancelling match: ' + (parsed.message || response.status));
                 }
-                alert('Match cancelled successfully');
+            } catch (error) {
+                console.error('Error cancelling match:', error);
+                alert('Error cancelling match: ' + error.message);
+            } finally {
+                if (btn) btn.removeAttribute('disabled');
             }
         }
 
         function viewMatchDetails(matchId) {
-            alert(`View details for match ${matchId} (Feature coming soon)`);
+            console.log('View match details clicked for ID:', matchId);
+            // TODO: Implement match details view
+        }
+
+        // Dashboard redirect function
+        function redirectToDashboard() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || !user.userId) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            const userType = user.userType || user.roleId;
+            
+            if (userType === 'player' || userType === 1) {
+                window.location.href = 'player-dashboard.html';
+            } else if (userType === 'venue_owner' || userType === 2) {
+                window.location.href = 'venue-owner-dashboard.html';
+            } else if (userType === 'admin' || userType === 3) {
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                window.location.href = 'index.html';
+            }
         }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             loadMatches();
-            loadTeamsAndVenues();
+            loadSportsTeamsAndVenues();
         });
     </script>
 </body>

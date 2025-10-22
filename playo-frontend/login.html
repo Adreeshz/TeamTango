@@ -122,10 +122,23 @@
                         <button type="button" class="demo-login w-full text-left text-xs bg-white px-3 py-2 rounded border hover:bg-gray-50" data-email="rahul.player@gmail.com" data-password="player123">
                             🏏 Player Demo: rahul.player@gmail.com
                         </button>
-                        <button type="button" class="demo-login w-full text-left text-xs bg-white px-3 py-2 rounded border hover:bg-gray-50" data-email="priya.venue@gmail.com" data-password="venue123">
-                            🏟️ Venue Owner Demo: priya.venue@gmail.com
+                        <button type="button" class="demo-login w-full text-left text-xs bg-white px-3 py-2 rounded border hover:bg-gray-50" data-email="suresh.venue@gmail.com" data-password="venue123">
+                            🏟️ Venue Owner Demo: suresh.venue@gmail.com
                         </button>
                     </div>
+                </div>
+
+                <!-- Admin Login Section -->
+                <div class="mt-6 p-4 bg-red-50 rounded-lg border border-red-200">
+                    <div class="flex items-center mb-3">
+                        <i data-feather="shield" class="h-4 w-4 text-red-600 mr-2"></i>
+                        <h4 class="text-sm font-semibold text-red-800">Administrator Access</h4>
+                    </div>
+                    <p class="text-xs text-red-700 mb-3">Restricted access for system administrators only</p>
+                    <button type="button" id="admin-login-btn" class="w-full bg-red-600 hover:bg-red-700 text-white text-xs font-medium py-2 px-4 rounded transition-colors">
+                        <i data-feather="key" class="h-3 w-3 inline mr-1"></i>
+                        Login as Administrator
+                    </button>
                 </div>
             </div>
         </div>
@@ -159,6 +172,74 @@
             });
         });
 
+        // Admin login functionality
+        document.getElementById('admin-login-btn').addEventListener('click', async function() {
+            // Show confirmation dialog
+            const confirmed = confirm('⚠️ Administrator Access\n\nThis is restricted access for system administrators only. Unauthorized access is not permitted.\n\nAre you sure you want to continue?');
+            
+            if (!confirmed) {
+                return;
+            }
+
+            // Prompt for admin credentials
+            const adminEmail = prompt('Enter Administrator Email:', 'admin@teamtango.com');
+            if (!adminEmail) return;
+
+            const adminPassword = prompt('Enter Administrator Password:');
+            if (!adminPassword) return;
+
+            // Show loading state
+            const adminBtn = this;
+            const originalText = adminBtn.innerHTML;
+            adminBtn.disabled = true;
+            adminBtn.innerHTML = '<i data-feather="loader" class="h-3 w-3 inline mr-1 animate-spin"></i>Authenticating...';
+            feather.replace();
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: adminEmail,
+                        password: adminPassword
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    // Check if user is actually admin
+                    if (result.user.userType === 'admin' || result.user.roleId === 3) {
+                        // Store auth data consistently
+                        localStorage.setItem('user', JSON.stringify(result.user));
+                        localStorage.setItem('token', result.token);
+                        localStorage.setItem('authToken', result.token);
+                        
+                        showToast(`Welcome Administrator ${result.user.name}! Redirecting to admin dashboard...`, 'success');
+                        
+                        // Redirect to admin dashboard
+                        setTimeout(() => {
+                            window.location.href = 'admin-dashboard.html';
+                        }, 2000);
+                    } else {
+                        showToast('Access denied. This account is not an administrator.', 'error');
+                    }
+                } else {
+                    showToast(result.message || 'Invalid administrator credentials.', 'error');
+                }
+            } catch (error) {
+                console.error('Admin login error:', error);
+                showToast('Network error. Please check your connection and try again.', 'error');
+            } finally {
+                // Reset button state
+                adminBtn.disabled = false;
+                adminBtn.innerHTML = originalText;
+                feather.replace();
+            }
+        });
+
         // Form submission
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -187,15 +268,35 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    // Store user info in localStorage
+                    // Store authentication data consistently
                     localStorage.setItem('user', JSON.stringify(result.user));
                     localStorage.setItem('token', result.token);
+                    localStorage.setItem('authToken', result.token);
+                    
+                    // Use the auth system if available
+                    if (typeof auth !== 'undefined') {
+                        auth.token = result.token;
+                        auth.currentUser = result.user;
+                        auth.updateUI();
+                    }
                     
                     showToast(`Welcome back, ${result.user.name}! Redirecting to dashboard...`, 'success');
                     
-                    // Redirect to dashboard after 2 seconds
+                    // Role-based redirection
                     setTimeout(() => {
-                        window.location.href = 'dashboard.html';
+                        const userType = result.user.userType || result.user.role?.toLowerCase();
+                        const roleId = result.user.roleId;
+                        
+                        if (userType === 'player' || roleId === 1) {
+                            window.location.href = 'player-dashboard.html';
+                        } else if (userType === 'venue_owner' || roleId === 2) {
+                            window.location.href = 'venue-owner-dashboard.html';
+                        } else if (userType === 'admin' || roleId === 3) {
+                            window.location.href = 'admin-dashboard.html';
+                        } else {
+                            // Fallback to index for unknown roles
+                            window.location.href = 'index.html';
+                        }
                     }, 2000);
                 } else {
                     showToast(result.message || 'Login failed. Please check your credentials.', 'error');
@@ -249,5 +350,8 @@
             }, 5000);
         }
     </script>
+    
+    <!-- Load authentication system -->
+    <script src="js/auth.js"></script>
 </body>
 </html>

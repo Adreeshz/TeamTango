@@ -83,7 +83,7 @@
                 <!-- Role Selection -->
                 <div class="mb-8">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 text-center">Choose your role</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-lg mx-auto">
                         <div class="role-card bg-white rounded-lg p-6 border-2 border-gray-200" data-role="player">
                             <div class="text-center">
                                 <i data-feather="users" class="h-12 w-12 text-green-600 mx-auto mb-3"></i>
@@ -315,7 +315,8 @@
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showToast(`Account created successfully! Welcome to TeamTango Pune as a ${selectedRole === 'player' ? 'Player' : 'Venue Owner'}!`, 'success');
+                    const roleDisplayName = selectedRole === 'player' ? 'Player' : 'Venue Owner';
+                    showToast(`Account created successfully! Welcome to TeamTango Pune as a ${roleDisplayName}!`, 'success');
                     
                     // Clear form
                     this.reset();
@@ -388,5 +389,8 @@
             e.target.value = value;
         });
     </script>
+    
+    <!-- Load authentication system -->
+    <script src="js/auth.js"></script>
 </body>
 </html>

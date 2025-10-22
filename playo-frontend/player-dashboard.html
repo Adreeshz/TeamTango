@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Dashboard - TeamTango</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        secondary: {
+                            50: '#f5f3ff',
+                            100: '#ede9fe',
+                            200: '#ddd6fe',
+                            300: '#c4b5fd',
+                            400: '#a78bfa',
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                            700: '#6d28d9',
+                            800: '#5b21b6',
+                            900: '#4c1d95',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+        .stat-card {
+            transition: all 0.3s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.1);
+        }
+        .modal {
+            display: none;
+        }
+        .modal.active {
+            display: flex;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex-shrink-0 flex items-center">
+                        <i data-feather="activity" class="text-primary-600 h-8 w-8"></i>
+                        <span class="ml-2 text-xl font-bold text-primary-600">TeamTango</span>
+                    </a>
+                    <div class="hidden sm:ml-6 sm:flex sm:space-x-8">
+                        <a href="player-dashboard.html" class="border-primary-500 text-gray-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Dashboard</a>
+                        <a href="venues.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Book Venue</a>
+                        <a href="teams.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">My Teams</a>
+                        <a href="payments.html" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Payments</a>
+                        <a href="#" onclick="showBookingModal()" class="border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">Quick Book</a>
+                    </div>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="toggleNotifications()" class="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none">
+                        <i data-feather="bell"></i>
+                    </button>
+                    
+                    <!-- User Menu -->
+                    <div class="relative">
+                        <button onclick="toggleUserMenu()" class="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                <span id="user-initials" class="text-primary-600 font-medium text-sm">U</span>
+                            </div>
+                            <span id="user-name" class="ml-2 text-gray-700 font-medium">Loading...</span>
+                        </button>
+                        
+                        <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                            <a href="#" onclick="showProfileModal()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile Settings</a>
+                            <a href="#" onclick="logout()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Welcome Banner -->
+    <div class="bg-primary-600 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold">Welcome back, <span id="welcome-name">Player</span>!</h1>
+                    <p class="text-primary-100 mt-1">Ready to book your next game or join a team?</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="showBookingModal()" class="bg-white text-primary-600 px-4 py-2 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+                        <i data-feather="plus" class="inline w-4 h-4 mr-1"></i>
+                        Quick Book
+                    </button>
+                    <button onclick="showTeamModal()" class="bg-primary-700 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-800 transition-colors">
+                        <i data-feather="users" class="inline w-4 h-4 mr-1"></i>
+                        Create Team
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="stat-card bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="calendar" class="h-6 w-6 text-gray-400"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Bookings</dt>
+                                <dd class="text-lg font-medium text-gray-900" id="total-bookings">-</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="users" class="h-6 w-6 text-gray-400"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Teams Joined</dt>
+                                <dd class="text-lg font-medium text-gray-900" id="total-teams">-</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="clock" class="h-6 w-6 text-gray-400"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Upcoming Games</dt>
+                                <dd class="text-lg font-medium text-gray-900" id="upcoming-games">-</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card bg-white overflow-hidden shadow rounded-lg">
+                <div class="p-5">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i data-feather="dollar-sign" class="h-6 w-6 text-gray-400"></i>
+                        </div>
+                        <div class="ml-5 w-0 flex-1">
+                            <dl>
+                                <dt class="text-sm font-medium text-gray-500 truncate">Total Spent</dt>
+                                <dd class="text-lg font-medium text-gray-900" id="total-spent">₹0</dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Recent Bookings -->
+            <div class="lg:col-span-2">
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Recent Bookings</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="recent-bookings" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">Loading your bookings...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                
+                <!-- My Teams -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">My Teams</h3>
+                    </div>
+                    <div class="p-6">
+                        <div id="my-teams" class="space-y-3">
+                            <div class="text-center py-4 text-gray-500">Loading teams...</div>
+                        </div>
+                        <button onclick="showTeamModal()" class="mt-4 w-full bg-primary-50 text-primary-700 py-2 px-4 rounded-lg hover:bg-primary-100 transition-colors">
+                            <i data-feather="plus" class="inline w-4 h-4 mr-2"></i>
+                            Create New Team
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Quick Actions</h3>
+                    </div>
+                    <div class="p-6 space-y-3">
+                        <button onclick="window.location.href='venues.html'" class="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center">
+                                <i data-feather="map-pin" class="w-5 h-5 text-primary-600 mr-3"></i>
+                                <div>
+                                    <div class="font-medium text-gray-900">Find Venues</div>
+                                    <div class="text-sm text-gray-500">Browse and book sports venues</div>
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <button onclick="window.location.href='teams.html'" class="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center">
+                                <i data-feather="users" class="w-5 h-5 text-secondary-600 mr-3"></i>
+                                <div>
+                                    <div class="font-medium text-gray-900">Join Teams</div>
+                                    <div class="text-sm text-gray-500">Find teams to play with</div>
+                                </div>
+                            </div>
+                        </button>
+                        
+                        <button onclick="showBookingModal()" class="w-full text-left px-4 py-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center">
+                                <i data-feather="calendar" class="w-5 h-5 text-green-600 mr-3"></i>
+                                <div>
+                                    <div class="font-medium text-gray-900">Quick Book</div>
+                                    <div class="text-sm text-gray-500">Book a venue right now</div>
+                                </div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Player Search -->
+                <div class="bg-white shadow rounded-lg">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900">Find Players</h3>
+                    </div>
+                    <div class="p-4">
+                        <div class="mb-3">
+                            <input id="player-search-input" type="search" placeholder="Search players by name, email, phone, city..." class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div class="mb-3 flex items-center space-x-2">
+                            <button id="player-search-btn" class="bg-primary-600 text-white px-3 py-2 rounded-md">Search</button>
+                            <button id="player-search-clear" class="px-3 py-2 border rounded-md">Clear</button>
+                        </div>
+                        <div id="player-search-results" class="space-y-3 text-sm text-gray-700">
+                            <div class="text-center text-gray-500">Enter a search term to find players</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Venue Search -->
+                <div class="sidebar-section bg-white rounded-lg shadow p-4">
+                    <h3 class="font-semibold text-gray-800 mb-3">
+                        <i data-feather="map-pin" class="inline w-5 h-5 mr-2"></i>
+                        Search Venues
+                    </h3>
+                    <div class="space-y-3">
+                        <div class="flex space-x-2">
+                            <input id="venue-search-input" type="search" placeholder="Search venues by name, location, sport type..." class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                        </div>
+                        <div class="flex space-x-2">
+                            <button id="venue-search-btn" class="bg-primary-600 text-white px-3 py-2 rounded-md">Search</button>
+                            <button id="venue-search-clear" class="px-3 py-2 border rounded-md">Clear</button>
+                        </div>
+                        <div id="venue-search-results" class="space-y-3 text-sm text-gray-700">
+                            <div class="text-center text-gray-500">Enter a search term to find venues</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Booking Modal -->
+    <div id="booking-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Quick Book Venue</h3>
+                <button onclick="closeModal('booking-modal')" class="text-gray-400 hover:text-gray-600">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="quick-booking-form" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Select Venue</label>
+                        <select id="venue-select" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Choose a venue...</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Select Team (Optional)</label>
+                        <select id="team-select" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">Personal booking</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Date</label>
+                        <input type="date" id="booking-date" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Time Slot</label>
+                        <div class="grid grid-cols-2 gap-2 mt-1">
+                            <input type="time" id="start-time" required class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                            <input type="time" id="end-time" required class="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('booking-modal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700">
+                        Book Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Team Modal -->
+    <div id="team-modal" class="modal fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+        <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/3 shadow-lg rounded-md bg-white">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-900">Create New Team</h3>
+                <button onclick="closeModal('team-modal')" class="text-gray-400 hover:text-gray-600">
+                    <i data-feather="x" class="w-6 h-6"></i>
+                </button>
+            </div>
+            
+            <form id="create-team-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Team Name</label>
+                    <input type="text" id="team-name" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500" placeholder="Enter team name">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Sport</label>
+                    <select id="team-sport" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500">
+                        <option value="">Select sport...</option>
+                        <option value="1">Football</option>
+                        <option value="2">Basketball</option>
+                        <option value="3">Tennis</option>
+                        <option value="4">Badminton</option>
+                        <option value="5">Cricket</option>
+                        <option value="6">Volleyball</option>
+                    </select>
+                </div>
+                
+                <div class="flex justify-end space-x-3 pt-4">
+                    <button type="button" onclick="closeModal('team-modal')" class="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
+                        Cancel
+                    </button>
+                    <button type="submit" class="px-4 py-2 bg-secondary-600 text-white rounded-md hover:bg-secondary-700">
+                        Create Team
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize feather icons
+        feather.replace();
+
+        let currentUser = null;
+
+        // Check authentication on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            loadDashboardData();
+        });
+
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            
+            if (!token || !user) {
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            currentUser = JSON.parse(user);
+            
+            // Check if user is player
+            if (currentUser.userType !== 'player') {
+                alert('Access denied. This page is for players only.');
+                logout();
+                return;
+            }
+            
+            // Update UI with user data
+            document.getElementById('user-name').textContent = currentUser.name;
+            document.getElementById('welcome-name').textContent = currentUser.name;
+            document.getElementById('user-initials').textContent = currentUser.name.charAt(0).toUpperCase();
+            
+            // Set minimum date for booking
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('booking-date').min = today;
+        }
+
+        async function loadDashboardData() {
+            try {
+                const token = localStorage.getItem('token');
+                
+                // Load user stats and bookings
+                await Promise.all([
+                    loadUserStats(),
+                    loadRecentBookings(),
+                    loadUserTeams(),
+                    loadVenues()
+                ]);
+                
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadUserStats() {
+            try {
+                const token = localStorage.getItem('token');
+                
+                const response = await fetch('http://localhost:5000/api/bookings/my', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const bookings = data.bookings || [];
+                    
+                    document.getElementById('total-bookings').textContent = bookings.length;
+                    
+                    const upcomingGames = bookings.filter(b => 
+                        new Date(b.BookingDate) > new Date() && b.Status === 'Confirmed'
+                    ).length;
+                    document.getElementById('upcoming-games').textContent = upcomingGames;
+                    
+                    const totalSpent = bookings.reduce((sum, b) => 
+                        sum + (b.PaymentAmount || 0), 0
+                    );
+                    document.getElementById('total-spent').textContent = `₹${totalSpent}`;
+                } else {
+                    document.getElementById('total-bookings').textContent = '0';
+                    document.getElementById('upcoming-games').textContent = '0';
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        async function loadRecentBookings() {
+            try {
+                const token = localStorage.getItem('token');
+                console.log('Loading recent bookings, token:', token ? 'Present' : 'Missing');
+                
+                const response = await fetch('http://localhost:5000/api/bookings/my', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const container = document.getElementById('recent-bookings');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const bookings = data.bookings || [];
+                    
+                    if (bookings.length === 0) {
+                        container.innerHTML = '<div class="text-center py-8 text-gray-500">No bookings yet. <a href="venues.html" class="text-primary-600 hover:text-primary-500">Book your first venue!</a></div>';
+                        return;
+                    }
+                    
+                    container.innerHTML = bookings.slice(0, 5).map(booking => `
+                        <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                            <div class="flex justify-between items-start">
+                                <div class="flex-1">
+                                    <h4 class="font-medium text-gray-900">${booking.VenueName}</h4>
+                                    <p class="text-sm text-gray-500">${booking.VenueAddress}</p>
+                                    <div class="flex items-center mt-2 text-sm text-gray-600">
+                                        <i data-feather="calendar" class="w-4 h-4 mr-1"></i>
+                                        ${new Date(booking.BookingDate).toLocaleDateString()}
+                                        <i data-feather="clock" class="w-4 h-4 ml-3 mr-1"></i>
+                                        ${booking.StartTime} - ${booking.EndTime}
+                                    </div>
+                                    ${booking.TeamName ? `<div class="text-sm text-gray-600 mt-1">Team: ${booking.TeamName}</div>` : ''}
+                                </div>
+                                <div class="text-right">
+                                    <span class="inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                        booking.Status === 'Confirmed' ? 'bg-green-100 text-green-800' :
+                                        booking.Status === 'Pending' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800'
+                                    }">${booking.Status}</span>
+                                    ${booking.PaymentAmount ? `<div class="text-sm text-gray-600 mt-1">₹${booking.PaymentAmount}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    
+                    // Re-initialize feather icons
+                    feather.replace();
+                } else {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                    console.error('Bookings request failed:', response.status, errorData);
+                    container.innerHTML = `<div class="text-center py-8 text-gray-500">Unable to load bookings: ${errorData.message || response.status}</div>`;
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                document.getElementById('recent-bookings').innerHTML = '<div class="text-center py-8 text-gray-500">Error loading bookings</div>';
+            }
+        }
+
+        async function loadUserTeams() {
+            try {
+                const token = localStorage.getItem('token');
+                console.log('Loading user teams, token:', token ? 'Present' : 'Missing');
+                
+                // Add cache-busting parameter to force fresh data
+                const response = await fetch('http://localhost:5000/api/teams/my?_t=' + Date.now(), {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const container = document.getElementById('my-teams');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const teams = data.teams || [];
+                    
+                    console.log('User teams loaded:', teams.length);
+                    
+                    if (teams.length === 0) {
+                        container.innerHTML = `
+                            <div class="text-center py-4 text-gray-500">
+                                <i data-feather="users" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                                <p>No teams joined yet</p>
+                                <a href="teams.html" class="text-primary-600 hover:text-primary-500 text-sm">Browse teams</a>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = teams.map(team => `
+                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-3">
+                                        <i data-feather="users" class="w-4 h-4 text-primary-600"></i>
+                                    </div>
+                                    <div>
+                                        <p class="font-medium text-gray-900">${team.TeamName}</p>
+                                        <p class="text-sm text-gray-500">${team.Sport || 'Multi-Sport'}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm font-medium text-gray-900">${team.MemberCount || 0} members</p>
+                                    <p class="text-xs text-gray-500">${team.Role || 'Member'}</p>
+                                </div>
+                            </div>
+                        `).join('');
+                    }
+                    
+                    document.getElementById('total-teams').textContent = teams.length;
+                } else {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                    console.error('Teams request failed:', response.status, errorData);
+                    container.innerHTML = `
+                        <div class="text-center py-4 text-gray-500">
+                            <i data-feather="alert-circle" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                            <p>Unable to load teams: ${errorData.message || response.status}</p>
+                        </div>
+                    `;
+                }
+                
+                feather.replace();
+            } catch (error) {
+                console.error('Error loading teams:', error);
+                document.getElementById('my-teams').innerHTML = `
+                    <div class="text-center py-4 text-gray-500">
+                        <i data-feather="alert-circle" class="w-8 h-8 mx-auto mb-2 text-gray-400"></i>
+                        <p>Error loading teams</p>
+                    </div>
+                `;
+                feather.replace();
+            }
+        }
+
+        async function loadVenues() {
+            try {
+                const response = await fetch('http://localhost:5000/api/venues');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const venues = data.venues || [];
+                    
+                    const venueSelect = document.getElementById('venue-select');
+                    venueSelect.innerHTML = '<option value="">Choose a venue...</option>';
+                    
+                    venues.forEach(venue => {
+                        const option = document.createElement('option');
+                        option.value = venue.VenueID;
+                        option.textContent = `${venue.VenueName} - ₹${venue.PricePerHour}/hr`;
+                        venueSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading venues:', error);
+            }
+        }
+
+        // Quick booking form submission
+        document.getElementById('quick-booking-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                VenueID: parseInt(document.getElementById('venue-select').value),
+                TeamID: document.getElementById('team-select').value ? parseInt(document.getElementById('team-select').value) : null,
+                BookingDate: document.getElementById('booking-date').value,
+                StartTime: document.getElementById('start-time').value,
+                EndTime: document.getElementById('end-time').value
+            };
+            
+            try {
+                const token = localStorage.getItem('authToken');
+                const response = await fetch('http://localhost:5000/api/bookings/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('Booking created successfully!');
+                    closeModal('booking-modal');
+                    loadDashboardData(); // Refresh data
+                } else {
+                    alert(data.message || 'Failed to create booking');
+                }
+            } catch (error) {
+                console.error('Booking error:', error);
+                alert('Failed to create booking. Please try again.');
+            }
+        });
+
+        // Create team form submission
+        document.getElementById('create-team-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = {
+                TeamName: document.getElementById('team-name').value,
+                SportID: parseInt(document.getElementById('team-sport').value)
+            };
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:5000/api/teams/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    console.log('Team created successfully:', data);
+                    alert('Team created successfully!');
+                    closeModal('team-modal');
+                    
+                    // Add delay and force refresh
+                    setTimeout(() => {
+                        console.log('Refreshing user teams...');
+                        loadUserTeams(); // Refresh teams
+                    }, 500);
+                } else {
+                    console.error('Team creation failed:', response.status, data);
+                    alert(data.message || 'Failed to create team');
+                }
+            } catch (error) {
+                console.error('Team creation error:', error);
+                alert('Failed to create team. Please try again.');
+            }
+        });
+
+        // Modal functions
+        function showBookingModal() {
+            document.getElementById('booking-modal').classList.add('active');
+        }
+
+        function showTeamModal() {
+            document.getElementById('team-modal').classList.add('active');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('active');
+        }
+
+        // User menu functions
+        function toggleUserMenu() {
+            const menu = document.getElementById('user-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function toggleNotifications() {
+            // TODO: Implement notifications functionality
+            console.log('Notifications clicked - feature not yet implemented');
+        }
+
+        function showProfileModal() {
+            // TODO: Implement profile settings modal
+            console.log('Profile settings clicked - feature not yet implemented');
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    modal.classList.remove('active');
+                }
+            });
+        }
+
+        // Close user menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const userMenu = document.getElementById('user-menu');
+            const userButton = event.target.closest('button');
+            
+            if (!userButton || !userButton.onclick || userButton.onclick.toString().indexOf('toggleUserMenu') === -1) {
+                userMenu.classList.add('hidden');
+            }
+        });
+
+        // Player search logic
+        (function() {
+            const input = document.getElementById('player-search-input');
+            const btn = document.getElementById('player-search-btn');
+            const clearBtn = document.getElementById('player-search-clear');
+            const resultsEl = document.getElementById('player-search-results');
+
+            // Debug: Check if elements exist
+            console.log('Search elements found:', { input, btn, clearBtn, resultsEl });
+            
+            if (!input || !btn || !clearBtn || !resultsEl) {
+                console.error('Search elements not found! Cannot initialize search functionality.');
+                return;
+            }
+
+            function renderResults(users) {
+                if (!users || users.length === 0) {
+                    resultsEl.innerHTML = '<div class="text-center text-gray-500">No players found</div>';
+                    return;
+                }
+
+                resultsEl.innerHTML = users.map(u => `
+                    <div class="border border-gray-200 rounded-lg p-3 flex items-center justify-between">
+                        <div>
+                            <div class="font-medium text-gray-900">${u.Name} <span class="text-xs text-gray-500">(#${u.UserID})</span></div>
+                            <div class="text-xs text-gray-500">${u.Email} • ${u.PhoneNumber || '—'}</div>
+                            <div class="text-xs text-gray-500">${u.Address || 'No address'}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500">${new Date(u.CreatedAt).toLocaleDateString()}</div>
+                            <button class="ml-3 px-3 py-1 bg-primary-50 text-primary-700 rounded-md text-xs" onclick="startChat(${u.UserID})">Message</button>
+                        </div>
+                    </div>
+                `).join('');
+
+                feather.replace();
+            }
+
+            async function doSearch(q) {
+                console.log('doSearch called with:', q);
+                const token = localStorage.getItem('token') || localStorage.getItem('authToken');
+                console.log('Token found:', token ? 'Yes' : 'No');
+                if (!token) {
+                    resultsEl.innerHTML = '<div class="text-center text-red-500">You must be logged in to search players.</div>';
+                    return;
+                }
+
+                resultsEl.innerHTML = '<div class="text-center text-gray-500">Searching...</div>';
+
+                try {
+                    const params = new URLSearchParams();
+                    if (q) params.set('q', q);
+                    const url = `http://localhost:5000/api/users/search?${params.toString()}`;
+                    console.log('Constructed URL:', url);
+                    console.log('Token being sent:', token ? token.substring(0, 10) + '...' : 'NO TOKEN');
+                    
+                    const resp = await fetch(url, {
+                        method: 'GET',
+                        headers: { 
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    console.log('Response received:', resp.status, resp.statusText);
+
+                    console.log('Response status:', resp.status);
+                    if (!resp.ok) {
+                        const err = await resp.json();
+                        console.log('Error response:', err);
+                        resultsEl.innerHTML = `<div class="text-center text-red-500">${err.message || 'Search failed'}</div>`;
+                        return;
+                    }
+
+                    const data = await resp.json();
+                    console.log('Search results:', data);
+                    renderResults(data.users);
+                } catch (error) {
+                    console.error('Search error details:', {
+                        error: error,
+                        message: error.message,
+                        stack: error.stack,
+                        name: error.name
+                    });
+                    resultsEl.innerHTML = `<div class="text-center text-red-500">Search failed: ${error.message}</div>`;
+                }
+            }
+
+            // Simple debounce function
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Debounce input
+            const debouncedSearch = debounce((e) => {
+                doSearch(e.target.value.trim());
+            }, 350);
+
+            input.addEventListener('input', debouncedSearch);
+            btn.addEventListener('click', () => doSearch(input.value.trim()));
+            clearBtn.addEventListener('click', () => {
+                input.value = '';
+                resultsEl.innerHTML = '<div class="text-center text-gray-500">Enter a search term to find players</div>';
+            });
+
+            // Expose quick action
+            window.startChat = function(userId) {
+                console.log('Connect with user clicked for ID:', userId);
+                // TODO: Implement user connection/messaging feature
+            };
+        })();
+
+        // Venue search logic
+        (function() {
+            const input = document.getElementById('venue-search-input');
+            const btn = document.getElementById('venue-search-btn');
+            const clearBtn = document.getElementById('venue-search-clear');
+            const resultsEl = document.getElementById('venue-search-results');
+
+            // Debug: Check if elements exist
+            console.log('Venue search elements found:', { input, btn, clearBtn, resultsEl });
+            
+            if (!input || !btn || !clearBtn || !resultsEl) {
+                console.error('Venue search elements not found! Cannot initialize venue search functionality.');
+                return;
+            }
+
+            function renderVenueResults(venues) {
+                if (!venues || venues.length === 0) {
+                    resultsEl.innerHTML = '<div class="text-center text-gray-500">No venues found</div>';
+                    return;
+                }
+
+                resultsEl.innerHTML = venues.map(v => `
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-900">${v.VenueName}</div>
+                                <div class="text-xs text-gray-500 mt-1">
+                                    <i data-feather="map-pin" class="inline w-3 h-3"></i>
+                                    ${v.Location}
+                                </div>
+                                <div class="text-xs text-gray-500">
+                                    <i data-feather="activity" class="inline w-3 h-3"></i>
+                                    ${v.SportType} • ₹${v.PricePerHour}/hour
+                                </div>
+                                ${v.OwnerName ? `<div class="text-xs text-gray-500">Owner: ${v.OwnerName}</div>` : ''}
+                            </div>
+                            <div class="text-right">
+                                <div class="text-xs text-yellow-600 mb-1">⭐ ${v.Rating}</div>
+                                <button class="px-3 py-1 bg-primary-50 text-primary-700 rounded-md text-xs" onclick="bookVenue(${v.VenueID})">Book</button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Replace feather icons
+                if (typeof feather !== 'undefined') {
+                    feather.replace();
+                }
+            }
+
+            async function doVenueSearch(query) {
+                if (!query) {
+                    resultsEl.innerHTML = '<div class="text-center text-gray-500">Enter a search term to find venues</div>';
+                    return;
+                }
+
+                const token = localStorage.getItem('token');
+                
+                if (!token) {
+                    resultsEl.innerHTML = '<div class="text-center text-red-500">You must be logged in to search venues.</div>';
+                    return;
+                }
+
+                try {
+                    resultsEl.innerHTML = '<div class="text-center text-gray-500"><div class="animate-spin inline-block w-4 h-4 border-2 border-gray-300 border-t-2 border-t-primary-600 rounded-full"></div> Searching venues...</div>';
+                    
+                    const response = await fetch(`http://localhost:5000/api/venues/search?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('Venue search results:', data);
+                        renderVenueResults(data.venues || []);
+                    } else {
+                        const errorData = await response.json();
+                        console.log('Venue search failed:', errorData);
+                        resultsEl.innerHTML = `<div class="text-center text-red-500">Search failed: ${errorData.message || 'Unknown error'}</div>`;
+                    }
+                } catch (error) {
+                    console.error('Venue search error:', error);
+                    resultsEl.innerHTML = '<div class="text-center text-red-500">Network error occurred</div>';
+                }
+            }
+
+            // Simple debounce function for venues
+            function debounceVenue(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+
+            // Debounce input
+            const debouncedVenueSearch = debounceVenue((e) => {
+                doVenueSearch(e.target.value.trim());
+            }, 350);
+
+            input.addEventListener('input', debouncedVenueSearch);
+            btn.addEventListener('click', () => doVenueSearch(input.value.trim()));
+            clearBtn.addEventListener('click', () => {
+                input.value = '';
+                resultsEl.innerHTML = '<div class="text-center text-gray-500">Enter a search term to find venues</div>';
+            });
+
+            // Expose quick action for venue booking
+            window.bookVenue = function(venueId) {
+                console.log('Book venue clicked for ID:', venueId);
+                // Open the quick booking modal with venue pre-selected
+                showBookingModal();
+                // Pre-select the venue in the dropdown
+                setTimeout(() => {
+                    const venueSelect = document.getElementById('venue-select');
+                    if (venueSelect) {
+                        venueSelect.value = venueId;
+                    }
+                }, 100);
+            };
+        })();
+    </script>
+</body>
+</html>

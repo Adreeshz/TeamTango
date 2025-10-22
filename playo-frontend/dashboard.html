@@ -34,6 +34,45 @@
         @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
         body { font-family: 'Poppins', sans-serif; }
     </style>
+    
+    <!-- Authentication Check -->
+    <script>
+        // Check authentication on page load
+        function checkAuthentication() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || !user.userId) {
+                // Show loading message briefly then redirect
+                document.body.innerHTML = `
+                    <div class="min-h-screen bg-gray-50 flex items-center justify-center">
+                        <div class="text-center">
+                            <i data-feather="lock" class="h-16 w-16 text-red-500 mx-auto mb-4"></i>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h2>
+                            <p class="text-gray-600 mb-4">You need to log in to access the dashboard.</p>
+                            <p class="text-sm text-gray-500">Redirecting to login page...</p>
+                        </div>
+                    </div>
+                `;
+                
+                // Replace feather icons and redirect after 2 seconds
+                if (typeof feather !== 'undefined') feather.replace();
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                
+                return false;
+            }
+            
+            return true;
+        }
+        
+        // Check auth immediately when script loads
+        if (!checkAuthentication()) {
+            // Stop further script execution if not authenticated
+            throw new Error('Authentication required');
+        }
+    </script>
 </head>
 <body class="bg-gray-50">
     <!-- Navigation -->
@@ -284,26 +323,132 @@
         
         const API_BASE_URL = 'http://localhost:5000/api';
 
-        // Load dashboard data
+        // Redirect to appropriate role-based dashboard
+        function checkAuthAndRedirect() {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            
+            if (!token || !user.userId) {
+                // Not logged in, redirect to login
+                window.location.href = 'login.html';
+                return;
+            }
+            
+            // Redirect based on user role
+            const userType = user.userType || user.roleId;
+            
+            if (userType === 'player' || userType === 1) {
+                window.location.href = 'player-dashboard.html';
+            } else if (userType === 'venue_owner' || userType === 2) {
+                window.location.href = 'venue-owner-dashboard.html';
+            } else if (userType === 'admin' || userType === 3) {
+                window.location.href = 'admin-dashboard.html';
+            } else {
+                // Unknown role, redirect to index
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Load dashboard data (now fully dynamic)
         async function loadDashboardData() {
             try {
-                // Load teams count
-                const teamsResponse = await fetch(`${API_BASE_URL}/teams`);
-                const teams = await teamsResponse.json();
-                document.getElementById('total-teams').textContent = teams.length || '0';
+                const token = localStorage.getItem('token');
+                const headers = {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                };
 
-                // Load matches
-                const matchesResponse = await fetch(`${API_BASE_URL}/matches`);
-                const matches = await matchesResponse.json();
+                // Load teams count
+                const teamsResponse = await fetch(`${API_BASE_URL}/teams`, { headers });
+                const teamsData = await teamsResponse.json();
+                const totalTeams = teamsData.teams ? teamsData.teams.length : 0;
+                document.getElementById('total-teams').textContent = totalTeams;
+
+                // Load user's bookings
+                const bookingsResponse = await fetch(`${API_BASE_URL}/bookings/user`, { headers });
+                const bookingsData = await bookingsResponse.json();
                 
                 // Filter upcoming matches
-                const now = new Date();
-                const upcoming = matches.filter(match => new Date(match.MatchDate) > now);
-                document.getElementById('upcoming-matches').textContent = upcoming.length || '0';
+                const now = new Date().toISOString().split('T')[0];
+                const upcomingBookings = bookingsData.bookings ? 
+                    bookingsData.bookings.filter(booking => booking.BookingDate >= now && booking.Status === 'Confirmed') : [];
+                document.getElementById('upcoming-matches').textContent = upcomingBookings.length;
+
+                // Calculate wins (completed matches with positive feedback)
+                const completedBookings = bookingsData.bookings ? 
+                    bookingsData.bookings.filter(booking => booking.Status === 'Completed') : [];
+                document.getElementById('wins-month').textContent = completedBookings.length;
+
+                // Calculate total spent
+                const totalSpent = bookingsData.bookings ? 
+                    bookingsData.bookings.reduce((sum, booking) => sum + (booking.Cost || 0), 0) : 0;
+                document.getElementById('total-spent').textContent = `₹${totalSpent.toLocaleString()}`;
+
+                // Load recent matches dynamically
+                await loadRecentMatches(completedBookings.slice(-3));
+                
+                // Load upcoming matches dynamically  
+                await loadUpcomingMatches(upcomingBookings.slice(0, 3));
 
             } catch (error) {
-                console.log('Using default dashboard data');
+                console.error('Failed to load dashboard data:', error);
+                // If API fails, redirect to proper role-based dashboard
+                checkAuthAndRedirect();
             }
+        }
+
+        // Load recent matches dynamically
+        async function loadRecentMatches(recentBookings) {
+            const container = document.getElementById('recent-matches');
+            if (!recentBookings || recentBookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No recent matches found</p>';
+                return;
+            }
+
+            const matchesHtml = recentBookings.map(booking => `
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="flex-shrink-0">
+                        <i data-feather="calendar" class="h-10 w-10 text-blue-600"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">Match at ${booking.VenueName || 'Venue'}</p>
+                        <p class="text-sm text-gray-500">${new Date(booking.BookingDate).toLocaleDateString()} • ${booking.StartTime}</p>
+                    </div>
+                    <div class="inline-flex items-center text-sm font-semibold text-green-600">
+                        ${booking.Status}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = matchesHtml;
+            feather.replace();
+        }
+
+        // Load upcoming matches dynamically
+        async function loadUpcomingMatches(upcomingBookings) {
+            const container = document.getElementById('upcoming-matches-list');
+            if (!upcomingBookings || upcomingBookings.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">No upcoming matches scheduled</p>';
+                return;
+            }
+
+            const matchesHtml = upcomingBookings.map(booking => `
+                <div class="flex items-center space-x-4 mb-4">
+                    <div class="flex-shrink-0">
+                        <i data-feather="calendar-plus" class="h-10 w-10 text-blue-600"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">Match at ${booking.VenueName || 'Venue'}</p>
+                        <p class="text-sm text-gray-500">${new Date(booking.BookingDate).toLocaleDateString()} • ${booking.StartTime}</p>
+                    </div>
+                    <div class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                        ${booking.Status}
+                    </div>
+                </div>
+            `).join('');
+            
+            container.innerHTML = matchesHtml;
+            feather.replace();
         }
 
         // Quick Actions Event Handlers
@@ -336,6 +481,10 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // First check authentication and redirect if needed
+            checkAuthAndRedirect();
+            
+            // If we're still here, load dynamic data
             loadDashboardData();
             initQuickActions();
         });
