@@ -36,29 +36,24 @@ router.get('/', async (req, res) => {
         connection = await createConnection();
         
         // Complex query joining multiple tables for complete team information
+        // Use team_summary view for simplified query
         const [teams] = await connection.execute(`
             SELECT 
-                t.TeamID, 
-                t.TeamName, 
-                s.SportName as Sport,
-                t.SportID,
-                u.Name as CaptainName,
-                u.UserID as CaptainID,
-                u.Email as CaptainEmail,
-                (SELECT COUNT(*) FROM TeamMembers tm WHERE tm.TeamID = t.TeamID) as MemberCount,
-                (SELECT COUNT(*) 
-                 FROM TeamMembers tm 
-                 JOIN Users um ON tm.UserID = um.UserID 
-                 WHERE tm.TeamID = t.TeamID AND um.Gender = 'Male') as MaleMembers,
-                (SELECT COUNT(*) 
-                 FROM TeamMembers tm 
-                 JOIN Users um ON tm.UserID = um.UserID 
-                 WHERE tm.TeamID = t.TeamID AND um.Gender = 'Female') as FemaleMembers,
+                TeamID, 
+                TeamName, 
+                SportName as Sport,
+                SportID,
+                CaptainName,
+                CaptainID,
+                CaptainEmail,
+                TotalMembers as MemberCount,
+                MaleMembers,
+                FemaleMembers,
+                TotalMatches,
+                Wins,
                 0 as TotalBookings
-            FROM Teams t
-            LEFT JOIN Sports s ON t.SportID = s.SportID
-            LEFT JOIN Users u ON t.CaptainID = u.UserID
-            ORDER BY t.TeamName
+            FROM team_summary
+            ORDER BY TeamName
         `);
         
         res.json({
@@ -164,22 +159,24 @@ router.get('/:id', async (req, res) => {
         
         const teamId = parseInt(req.params.id);
         
-        // Get team details
+        // Get team details using team_summary view
         const [teams] = await connection.execute(`
             SELECT 
-                t.TeamID, 
-                t.TeamName, 
-                s.SportName as Sport,
-                t.SportID,
-                u.Name as CaptainName,
-                u.UserID as CaptainID,
-                u.Email as CaptainEmail,
-                u.PhoneNumber as CaptainPhone,
-                u.Gender as CaptainGender
-            FROM Teams t
-            LEFT JOIN Sports s ON t.SportID = s.SportID
-            LEFT JOIN Users u ON t.CaptainID = u.UserID
-            WHERE t.TeamID = ?
+                TeamID, 
+                TeamName, 
+                SportName as Sport,
+                SportID,
+                CaptainName,
+                CaptainID,
+                CaptainEmail,
+                CaptainPhone,
+                TotalMembers,
+                MaleMembers,
+                FemaleMembers,
+                TotalMatches,
+                Wins
+            FROM team_summary
+            WHERE TeamID = ?
         `, [teamId]);
         
         if (teams.length === 0) {

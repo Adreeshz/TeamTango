@@ -224,6 +224,77 @@
 
             <!-- Overview Tab -->
             <div id="content-overview" class="tab-content p-6">
+                <!-- Today's Activity Summary Cards -->
+                <div class="mb-8">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4 flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                        Today's Activity
+                    </h3>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <div class="bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg p-6 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-blue-100 text-sm font-medium">Today's Bookings</p>
+                                    <p class="text-3xl font-bold mt-2" id="today-bookings">0</p>
+                                </div>
+                                <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-green-500 to-green-600 rounded-lg shadow-lg p-6 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-green-100 text-sm font-medium">Confirmed Today</p>
+                                    <p class="text-3xl font-bold mt-2" id="today-confirmed">0</p>
+                                </div>
+                                <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-lg p-6 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-purple-100 text-sm font-medium">Today's Matches</p>
+                                    <p class="text-3xl font-bold mt-2" id="today-matches">0</p>
+                                </div>
+                                <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg shadow-lg p-6 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-yellow-100 text-sm font-medium">Today's Revenue</p>
+                                    <p class="text-3xl font-bold mt-2" id="today-revenue">₹0</p>
+                                </div>
+                                <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-pink-500 to-pink-600 rounded-lg shadow-lg p-6 text-white">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-pink-100 text-sm font-medium">New Users</p>
+                                    <p class="text-3xl font-bold mt-2" id="today-new-users">0</p>
+                                </div>
+                                <svg class="w-12 h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Recent Activity -->
                     <div>
@@ -379,7 +450,8 @@
             try {
                 await Promise.all([
                     loadSystemStats(),
-                    loadRecentActivity()
+                    loadRecentActivity(),
+                    loadTodaySummary()
                 ]);
                 
                 // Set overview tab as active by default
@@ -387,6 +459,27 @@
                 
             } catch (error) {
                 console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        async function loadTodaySummary() {
+            try {
+                const response = await fetch('/api/analytics/today');
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Update today's summary cards
+                    document.getElementById('today-bookings').textContent = data.TodayBookings || 0;
+                    document.getElementById('today-confirmed').textContent = data.ConfirmedToday || 0;
+                    document.getElementById('today-matches').textContent = data.TodayMatches || 0;
+                    document.getElementById('today-revenue').textContent = `₹${parseFloat(data.TodayRevenue || 0).toFixed(2)}`;
+                    document.getElementById('today-new-users').textContent = data.NewUsers || 0;
+                } else {
+                    console.error('Failed to load today\'s summary');
+                }
+            } catch (error) {
+                console.error('Error loading today\'s summary:', error);
             }
         }
 

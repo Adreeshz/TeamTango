@@ -278,5 +278,460 @@ DELIMITER ;
 DELETE FROM Teams WHERE TeamID = ?
 ```
 
+---
+
+## Match Management (Team Competition)
+### 1. Create New Match:
+```sql
+INSERT INTO Matches (MatchTitle, Team1ID, Team2ID, VenueID, MatchDate, MatchTime, Team1Score, Team2Score, MatchStatus)
+VALUES (?, ?, ?, ?, ?, ?, 0, 0, 'Scheduled')
+```
+
+### 2. Validate Teams are Different (Trigger):
+```sql
+DELIMITER //
+
+CREATE TRIGGER tr_match_team_validation
+BEFORE INSERT ON Matches
+FOR EACH ROW
+BEGIN
+    IF NEW.Team1ID = NEW.Team2ID THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Team1 and Team2 must be different';
+    END IF;
+END //
+
+DELIMITER ;
+```
+
+### 3. Validate Teams Play Same Sport (Trigger):
+```sql
+DELIMITER //
+
+CREATE TRIGGER tr_match_sport_validation
+BEFORE INSERT ON Matches
+FOR EACH ROW
+BEGIN
+    DECLARE team1_sport INT;
+    DECLARE team2_sport INT;
+    
+    -- Get sports for both teams
+    SELECT SportID INTO team1_sport FROM Teams WHERE TeamID = NEW.Team1ID;
+    SELECT SportID INTO team2_sport FROM Teams WHERE TeamID = NEW.Team2ID;
+    
+    -- Validate same sport
+    IF team1_sport != team2_sport THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Both teams must play the same sport';
+    END IF;
+END //
+
+DELIMITER ;
+```
+
+### 4. Notify Team Captains of New Match (Trigger):
+```sql
+DELIMITER //
+
+CREATE TRIGGER tr_match_team_notification
+AFTER INSERT ON Matches
+FOR EACH ROW
+BEGIN
+    DECLARE team1_captain INT;
+    DECLARE team2_captain INT;
+    DECLARE notification_msg TEXT;
+    
+    -- Get team captains
+    SELECT CaptainID INTO team1_captain FROM Teams WHERE TeamID = NEW.Team1ID;
+    SELECT CaptainID INTO team2_captain FROM Teams WHERE TeamID = NEW.Team2ID;
+    
+    SET notification_msg = CONCAT('Match scheduled: ', NEW.MatchTitle, ' on ', NEW.MatchDate, ' at ', NEW.MatchTime);
+    
+    -- Notify both captains
+    INSERT INTO Notifications (UserID, Message, IsRead)
+    VALUES (team1_captain, notification_msg, FALSE);
+    
+    INSERT INTO Notifications (UserID, Message, IsRead)
+    VALUES (team2_captain, notification_msg, FALSE);
+END //
+
+DELIMITER ;
+```
+
+## Reading Match Data Queries:
+### 1. All Matches with Complete Details (Using View):
+```sql
+-- Using match_details view for pre-joined data
+SELECT 
+    MatchID, 
+    MatchTitle,
+    Team1Name as Team1, 
+    Team2Name as Team2,
+    VenueName as Venue,
+    MatchDate,
+    MatchTime,
+    MatchStatus as Status,
+    Team1Score,
+    Team2Score,
+    Winner,
+    SportName,
+    VenueLocation,
+    VenueCity,
+    CASE 
+        WHEN MatchStatus = 'Completed' AND Team1Score > Team2Score THEN 'Team1 Won'
+        WHEN MatchStatus = 'Completed' AND Team2Score > Team1Score THEN 'Team2 Won'
+        WHEN MatchStatus = 'Completed' AND Team1Score = Team2Score THEN 'Draw'
+        ELSE NULL
+    END as Result
+FROM match_details
+ORDER BY MatchDate DESC, MatchTime DESC
+```
+
+### 2. Matches for Specific Team:
+```sql
+SELECT 
+    m.MatchID,
+    m.MatchTitle,
+    m.MatchDate,
+    m.MatchTime,
+    m.MatchStatus,
+    CASE 
+        WHEN m.Team1ID = ? THEN t2.TeamName
+        ELSE t1.TeamName
+    END as OpponentTeam,
+    CASE 
+        WHEN m.Team1ID = ? THEN m.Team1Score
+        ELSE m.Team2Score
+    END as OurScore,
+    CASE 
+        WHEN m.Team1ID = ? THEN m.Team2Score
+        ELSE m.Team1Score
+    END as OpponentScore,
+    v.VenueName,
+    v.Location as VenueLocation
+FROM Matches m
+LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+LEFT JOIN Venues v ON m.VenueID = v.VenueID
+WHERE m.Team1ID = ? OR m.Team2ID = ?
+ORDER BY m.MatchDate DESC, m.MatchTime DESC
+```
+
+### 3. Upcoming Matches:
+```sql
+SELECT 
+    MatchID,
+    MatchTitle,
+    Team1Name,
+    Team2Name,
+    VenueName,
+    MatchDate,
+    MatchTime,
+    SportName
+FROM match_details
+WHERE MatchStatus = 'Scheduled'
+  AND MatchDate >= CURDATE()
+ORDER BY MatchDate ASC, MatchTime ASC
+```
+
+### 4. Completed Matches with Results:
+```sql
+SELECT 
+    MatchID,
+    MatchTitle,
+    Team1Name,
+    Team2Name,
+    Team1Score,
+    Team2Score,
+    Winner,
+    VenueName,
+    MatchDate,
+    MatchTime,
+    SportName
+FROM match_details
+WHERE MatchStatus = 'Completed'
+ORDER BY MatchDate DESC, MatchTime DESC
+```
+
+### 5. Single Match Details:
+```sql
+SELECT 
+    m.*,
+    t1.TeamName as Team1Name,
+    t1.CaptainID as Team1CaptainID,
+    u1.Name as Team1CaptainName,
+    t2.TeamName as Team2Name,
+    t2.CaptainID as Team2CaptainID,
+    u2.Name as Team2CaptainName,
+    v.VenueName,
+    v.Location as VenueLocation,
+    v.Address as VenueAddress,
+    v.ContactNumber as VenueContact,
+    s.SportName,
+    CASE 
+        WHEN m.MatchStatus = 'Completed' AND m.Team1Score > m.Team2Score THEN t1.TeamName
+        WHEN m.MatchStatus = 'Completed' AND m.Team2Score > m.Team1Score THEN t2.TeamName
+        WHEN m.MatchStatus = 'Completed' AND m.Team1Score = m.Team2Score THEN 'Draw'
+        ELSE NULL
+    END as Winner
+FROM Matches m
+LEFT JOIN Teams t1 ON m.Team1ID = t1.TeamID
+LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
+LEFT JOIN Users u1 ON t1.CaptainID = u1.UserID
+LEFT JOIN Users u2 ON t2.CaptainID = u2.UserID
+LEFT JOIN Venues v ON m.VenueID = v.VenueID
+LEFT JOIN Sports s ON t1.SportID = s.SportID
+WHERE m.MatchID = ?
+```
+
+## Match Update Queries:
+### 1. Update Match Status:
+```sql
+UPDATE Matches 
+SET MatchStatus = ? 
+WHERE MatchID = ?
+```
+
+### 2. Update Match Scores:
+```sql
+UPDATE Matches 
+SET Team1Score = ?, 
+    Team2Score = ?, 
+    MatchStatus = 'Completed' 
+WHERE MatchID = ?
+```
+
+### 3. Update Complete Match Information:
+```sql
+UPDATE Matches 
+SET MatchTitle = ?,
+    Team1ID = ?,
+    Team2ID = ?,
+    VenueID = ?,
+    MatchDate = ?,
+    MatchTime = ?,
+    Team1Score = ?,
+    Team2Score = ?,
+    MatchStatus = ?
+WHERE MatchID = ?
+```
+
+### 4. Reschedule Match:
+```sql
+UPDATE Matches 
+SET MatchDate = ?, 
+    MatchTime = ?, 
+    VenueID = ? 
+WHERE MatchID = ? 
+  AND MatchStatus = 'Scheduled'
+```
+
+## Match Deletion Queries:
+### 1. Check Match Status Before Deletion:
+```sql
+SELECT MatchID, MatchStatus, MatchDate
+FROM Matches
+WHERE MatchID = ?
+```
+
+### 2. Delete Match (Only if Not Completed):
+```sql
+DELETE FROM Matches 
+WHERE MatchID = ? 
+  AND MatchStatus != 'Completed'
+```
+
+### 3. Cancel Match Instead of Deleting:
+```sql
+UPDATE Matches 
+SET MatchStatus = 'Cancelled' 
+WHERE MatchID = ?
+```
+
+## Match Analytics Queries:
+### 1. Team Performance Statistics:
+```sql
+SELECT 
+    t.TeamID,
+    t.TeamName,
+    s.SportName,
+    COUNT(DISTINCT m.MatchID) as TotalMatches,
+    SUM(CASE 
+        WHEN m.MatchStatus = 'Completed' AND 
+             ((m.Team1ID = t.TeamID AND m.Team1Score > m.Team2Score) OR 
+              (m.Team2ID = t.TeamID AND m.Team2Score > m.Team1Score))
+        THEN 1 ELSE 0 
+    END) as Wins,
+    SUM(CASE 
+        WHEN m.MatchStatus = 'Completed' AND 
+             ((m.Team1ID = t.TeamID AND m.Team1Score < m.Team2Score) OR 
+              (m.Team2ID = t.TeamID AND m.Team2Score < m.Team1Score))
+        THEN 1 ELSE 0 
+    END) as Losses,
+    SUM(CASE 
+        WHEN m.MatchStatus = 'Completed' AND m.Team1Score = m.Team2Score
+        THEN 1 ELSE 0 
+    END) as Draws,
+    ROUND(
+        (SUM(CASE 
+            WHEN m.MatchStatus = 'Completed' AND 
+                 ((m.Team1ID = t.TeamID AND m.Team1Score > m.Team2Score) OR 
+                  (m.Team2ID = t.TeamID AND m.Team2Score > m.Team1Score))
+            THEN 1 ELSE 0 
+        END) * 100.0) / NULLIF(COUNT(CASE WHEN m.MatchStatus = 'Completed' THEN 1 END), 0), 
+        2
+    ) as WinPercentage
+FROM Teams t
+LEFT JOIN Sports s ON t.SportID = s.SportID
+LEFT JOIN Matches m ON (t.TeamID = m.Team1ID OR t.TeamID = m.Team2ID)
+WHERE t.TeamID = ?
+GROUP BY t.TeamID, t.TeamName, s.SportName
+```
+
+### 2. Venue Match Statistics:
+```sql
+SELECT 
+    v.VenueID,
+    v.VenueName,
+    v.Location,
+    s.SportName,
+    COUNT(m.MatchID) as TotalMatches,
+    COUNT(CASE WHEN m.MatchStatus = 'Completed' THEN 1 END) as CompletedMatches,
+    COUNT(CASE WHEN m.MatchStatus = 'Scheduled' THEN 1 END) as UpcomingMatches,
+    MAX(m.MatchDate) as LastMatchDate
+FROM Venues v
+LEFT JOIN Sports s ON v.SportID = s.SportID
+LEFT JOIN Matches m ON v.VenueID = m.VenueID
+WHERE v.VenueID = ?
+GROUP BY v.VenueID, v.VenueName, v.Location, s.SportName
+```
+
+### 3. Match Calendar (Monthly View):
+```sql
+SELECT 
+    DATE(MatchDate) as MatchDay,
+    COUNT(*) as MatchesScheduled,
+    GROUP_CONCAT(
+        CONCAT(Team1Name, ' vs ', Team2Name, ' at ', TIME_FORMAT(MatchTime, '%H:%i'))
+        SEPARATOR '; '
+    ) as MatchDetails
+FROM match_details
+WHERE YEAR(MatchDate) = ? 
+  AND MONTH(MatchDate) = ?
+  AND MatchStatus = 'Scheduled'
+GROUP BY DATE(MatchDate)
+ORDER BY MatchDay
+```
+
+### 4. Head-to-Head Record:
+```sql
+SELECT 
+    COUNT(*) as TotalMatches,
+    SUM(CASE 
+        WHEN Team1Score > Team2Score THEN 1 
+        ELSE 0 
+    END) as Team1Wins,
+    SUM(CASE 
+        WHEN Team2Score > Team1Score THEN 1 
+        ELSE 0 
+    END) as Team2Wins,
+    SUM(CASE 
+        WHEN Team1Score = Team2Score AND MatchStatus = 'Completed' THEN 1 
+        ELSE 0 
+    END) as Draws,
+    AVG(Team1Score) as Team1AvgScore,
+    AVG(Team2Score) as Team2AvgScore
+FROM Matches
+WHERE (Team1ID = ? AND Team2ID = ?) 
+   OR (Team1ID = ? AND Team2ID = ?)
+  AND MatchStatus = 'Completed'
+```
+
+### 5. Sport-wise Match Distribution:
+```sql
+SELECT 
+    s.SportName,
+    COUNT(m.MatchID) as TotalMatches,
+    COUNT(CASE WHEN m.MatchStatus = 'Completed' THEN 1 END) as CompletedMatches,
+    COUNT(CASE WHEN m.MatchStatus = 'Scheduled' THEN 1 END) as UpcomingMatches,
+    COUNT(CASE WHEN m.MatchStatus = 'Cancelled' THEN 1 END) as CancelledMatches
+FROM Sports s
+LEFT JOIN Teams t ON s.SportID = t.SportID
+LEFT JOIN Matches m ON (t.TeamID = m.Team1ID OR t.TeamID = m.Team2ID)
+GROUP BY s.SportName
+ORDER BY TotalMatches DESC
+```
+
+## Match Leaderboard Queries:
+### 1. Top Teams by Wins:
+```sql
+SELECT 
+    t.TeamID,
+    t.TeamName,
+    s.SportName,
+    COUNT(CASE WHEN m.MatchStatus = 'Completed' THEN 1 END) as MatchesPlayed,
+    SUM(CASE 
+        WHEN m.MatchStatus = 'Completed' AND 
+             ((m.Team1ID = t.TeamID AND m.Team1Score > m.Team2Score) OR 
+              (m.Team2ID = t.TeamID AND m.Team2Score > m.Team1Score))
+        THEN 1 ELSE 0 
+    END) as Wins,
+    ROUND(
+        (SUM(CASE 
+            WHEN m.MatchStatus = 'Completed' AND 
+                 ((m.Team1ID = t.TeamID AND m.Team1Score > m.Team2Score) OR 
+                  (m.Team2ID = t.TeamID AND m.Team2Score > m.Team1Score))
+            THEN 1 ELSE 0 
+        END) * 100.0) / NULLIF(COUNT(CASE WHEN m.MatchStatus = 'Completed' THEN 1 END), 0), 
+        2
+    ) as WinRate
+FROM Teams t
+LEFT JOIN Sports s ON t.SportID = s.SportID
+LEFT JOIN Matches m ON (t.TeamID = m.Team1ID OR t.TeamID = m.Team2ID)
+GROUP BY t.TeamID, t.TeamName, s.SportName
+HAVING MatchesPlayed >= 3
+ORDER BY Wins DESC, WinRate DESC
+LIMIT 10
+```
+
+### 2. Most Active Teams (By Matches Played):
+```sql
+SELECT 
+    t.TeamID,
+    t.TeamName,
+    s.SportName,
+    u.Name as CaptainName,
+    COUNT(DISTINCT m.MatchID) as TotalMatches,
+    COUNT(DISTINCT CASE WHEN m.MatchStatus = 'Completed' THEN m.MatchID END) as CompletedMatches,
+    COUNT(DISTINCT CASE WHEN m.MatchStatus = 'Scheduled' THEN m.MatchID END) as UpcomingMatches
+FROM Teams t
+LEFT JOIN Sports s ON t.SportID = s.SportID
+LEFT JOIN Users u ON t.CaptainID = u.UserID
+LEFT JOIN Matches m ON (t.TeamID = m.Team1ID OR t.TeamID = m.Team2ID)
+GROUP BY t.TeamID, t.TeamName, s.SportName, u.Name
+ORDER BY TotalMatches DESC
+LIMIT 10
+```
+
+### 3. Recent Match Results:
+```sql
+SELECT 
+    MatchID,
+    MatchTitle,
+    Team1Name,
+    Team1Score,
+    Team2Name,
+    Team2Score,
+    Winner,
+    VenueName,
+    MatchDate,
+    MatchTime,
+    SportName
+FROM match_details
+WHERE MatchStatus = 'Completed'
+ORDER BY MatchDate DESC, MatchTime DESC
+LIMIT 20
+```
+
 
 

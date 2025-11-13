@@ -152,5 +152,21 @@ router.get('/peak-hours', (req, res) => {
     });
 });
 
+// GET /api/analytics/today - Get today's activity summary using today_summary view
+router.get('/today', (req, res) => {
+    // Query today_summary view for real-time statistics
+    db.query('SELECT * FROM today_summary', (err, results) => {
+        if(err) return res.status(500).json({ error: err });
+        // Return first row (view returns single row with aggregated data)
+        res.json(results[0] || {
+            TodayBookings: 0,
+            ConfirmedToday: 0,
+            TodayMatches: 0,
+            TodayRevenue: 0,
+            NewUsers: 0
+        });
+    });
+});
+
 // Export router for use in main server application
 module.exports = router;

@@ -37,24 +37,21 @@ router.get('/', authenticateToken, async (req, res) => {
     try {
         connection = await createConnection();
         
+        // Use booking_details view for simplified query
         let query = `
             SELECT 
-                b.BookingID,
-                b.BookingDate,
-                ts.StartTime,
-                ts.EndTime,
-                b.BookingStatus as Status,
-                b.UserID,
-                u.Name as PlayerName,
-                v.VenueName,
-                v.Address as VenueAddress,
-                p.Amount as PaymentAmount,
-                p.PaymentStatus as PaymentStatus
-            FROM Bookings b
-            LEFT JOIN Users u ON b.UserID = u.UserID
-            LEFT JOIN Venues v ON b.VenueID = v.VenueID
-            LEFT JOIN Timeslots ts ON b.TimeslotID = ts.TimeslotID
-            LEFT JOIN Payments p ON b.BookingID = p.BookingID
+                BookingID,
+                BookingDate,
+                StartTime,
+                EndTime,
+                BookingStatus as Status,
+                UserID,
+                PlayerName,
+                VenueName,
+                VenueLocation as VenueAddress,
+                TotalAmount as PaymentAmount,
+                PaymentStatus
+            FROM booking_details
         `;
         
         let whereConditions = [];
@@ -62,10 +59,12 @@ router.get('/', authenticateToken, async (req, res) => {
         
         // Apply role-based filtering
         if (req.user.roleId === ROLES.PLAYER) {
-            whereConditions.push('b.UserID = ?');
+            whereConditions.push('UserID = ?');
             queryParams.push(req.user.userId);
         } else if (req.user.roleId === ROLES.VENUE_OWNER) {
-            whereConditions.push('v.OwnerID = ?');
+            // Note: venue_summary doesn't have OwnerID, need to join or filter differently
+            // For now, we'll need to add a subquery or join back to Venues
+            whereConditions.push('VenueID IN (SELECT VenueID FROM Venues WHERE OwnerID = ?)');
             queryParams.push(req.user.userId);
         }
         // Admin sees all bookings (no additional filtering)
@@ -74,7 +73,7 @@ router.get('/', authenticateToken, async (req, res) => {
             query += ' WHERE ' + whereConditions.join(' AND ');
         }
         
-        query += ' ORDER BY b.BookingDate DESC, ts.StartTime DESC';
+        query += ' ORDER BY BookingDate DESC, StartTime DESC';
         
         const [bookings] = await connection.execute(query, queryParams);
         
@@ -110,27 +109,24 @@ router.get('/my', authenticateToken, requirePlayerOrAdmin, async (req, res) => {
             userId = parseInt(req.query.userId);
         }
         
+        // Use booking_details view
         const [bookings] = await connection.execute(`
             SELECT 
-                b.BookingID,
-                b.BookingDate,
-                b.TotalAmount,
-                ts.StartTime,
-                ts.EndTime,
-                b.BookingStatus as Status,
-                v.VenueName,
-                v.Address as VenueAddress,
-                p.Amount as PaymentAmount,
-                p.PaymentStatus as PaymentStatus,
-                f.Rating as FeedbackRating,
-                f.Comment as FeedbackComments
-            FROM Bookings b
-            LEFT JOIN Venues v ON b.VenueID = v.VenueID
-            LEFT JOIN Timeslots ts ON b.TimeslotID = ts.TimeslotID
-            LEFT JOIN Payments p ON b.BookingID = p.BookingID
-            LEFT JOIN Feedback f ON f.VenueID = v.VenueID AND f.UserID = b.UserID
-            WHERE b.UserID = ?
-            ORDER BY b.BookingDate DESC, ts.StartTime DESC
+                BookingID,
+                BookingDate,
+                TotalAmount,
+                StartTime,
+                EndTime,
+                BookingStatus as Status,
+                VenueName,
+                VenueLocation as VenueAddress,
+                TotalAmount as PaymentAmount,
+                PaymentStatus,
+                NULL as FeedbackRating,
+                NULL as FeedbackComments
+            FROM booking_details
+            WHERE UserID = ?
+            ORDER BY BookingDate DESC, StartTime DESC
         `, [userId]);
         
         res.json({

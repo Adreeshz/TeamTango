@@ -44,37 +44,38 @@ router.get('/search', async (req, res) => {
         const searchTerm = `%${q.trim()}%`;
         
         // Search across all venue fields
+        // Use venue_summary view for simplified query with pre-computed stats
         const [venues] = await connection.execute(`
             SELECT 
-                v.VenueID, 
-                v.VenueName, 
-                v.Address as Location, 
-                v.OwnerID,
-                u.Name as OwnerName,
-                u.PhoneNumber as OwnerPhone,
-                COALESCE(s.SportName, 'Multi-Sport') as SportType,
-                v.PricePerHour,
+                VenueID, 
+                VenueName, 
+                Location, 
+                OwnerID,
+                OwnerName,
+                OwnerPhone,
+                COALESCE(SportName, 'Multi-Sport') as SportType,
+                PricePerHour,
                 CASE                                                    
-                    WHEN v.VenueName LIKE '%Shiv Chhatrapati%' THEN 'Modern indoor courts with professional lighting and air conditioning'
-                    WHEN v.VenueName LIKE '%Cooperage%' THEN 'Full-size field with natural grass and floodlights'
-                    WHEN v.VenueName LIKE '%Deccan%' THEN 'Premium courts with synthetic surface and coaching facilities'
-                    WHEN v.VenueName LIKE '%Sanas%' THEN 'Air-conditioned courts with wooden flooring'
-                    WHEN v.VenueName LIKE '%MCA%' THEN 'Professional ground with turf wicket and practice nets'
+                    WHEN VenueName LIKE '%Shiv Chhatrapati%' THEN 'Modern indoor courts with professional lighting and air conditioning'
+                    WHEN VenueName LIKE '%Cooperage%' THEN 'Full-size field with natural grass and floodlights'
+                    WHEN VenueName LIKE '%Deccan%' THEN 'Premium courts with synthetic surface and coaching facilities'
+                    WHEN VenueName LIKE '%Sanas%' THEN 'Air-conditioned courts with wooden flooring'
+                    WHEN VenueName LIKE '%MCA%' THEN 'Professional ground with turf wicket and practice nets'
                     ELSE 'Well-maintained sports facility with modern amenities'    
                 END as Description,
-                ROUND(4.2 + (RAND() * 0.7), 1) as Rating,
-                (SELECT COUNT(*) FROM Bookings b WHERE b.VenueID = v.VenueID) as TotalBookings
-            FROM Venues v 
-            LEFT JOIN Users u ON v.OwnerID = u.UserID
-            LEFT JOIN Sports s ON v.SportID = s.SportID
-            WHERE v.VenueName LIKE ? 
-               OR v.Address LIKE ? 
-               OR u.Name LIKE ? 
-               OR u.PhoneNumber LIKE ?
-               OR CAST(v.VenueID AS CHAR) LIKE ?
-               OR CAST(v.PricePerHour AS CHAR) LIKE ?
-               OR s.SportName LIKE ?
-            ORDER BY v.VenueName
+                COALESCE(AverageRating, 4.5) as Rating,
+                TotalBookings,
+                TotalReviews,
+                AvailableSlots
+            FROM venue_summary
+            WHERE VenueName LIKE ? 
+               OR Location LIKE ? 
+               OR OwnerName LIKE ? 
+               OR OwnerPhone LIKE ?
+               OR CAST(VenueID AS CHAR) LIKE ?
+               OR CAST(PricePerHour AS CHAR) LIKE ?
+               OR SportName LIKE ?
+            ORDER BY VenueName
         `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         
         // Post-process results to add local image paths for each venue
@@ -137,16 +138,20 @@ router.get('/', async (req, res) => {
     try {
         connection = await createConnection();
         
-        // Complex SQL query that dynamically generates venue information
+        // Use venue_summary view for pre-aggregated venue data
         const [venues] = await connection.execute(`
             SELECT 
-                v.VenueID, 
-                v.VenueName, 
-                v.Address as Location, 
-                v.OwnerID,
-                u.Name as OwnerName,
-                COALESCE(s.SportName, 'Multi-Sport') as SportType,
-                v.PricePerHour,
+                VenueID, 
+                VenueName, 
+                Location, 
+                OwnerID,
+                OwnerName,
+                COALESCE(SportName, 'Multi-Sport') as SportType,
+                PricePerHour,
+                COALESCE(AverageRating, 4.5) as Rating,
+                TotalBookings,
+                TotalReviews,
+                AvailableSlots,
                 CASE                                                    
                     WHEN v.VenueName LIKE '%Shiv Chhatrapati%' THEN 'Modern indoor courts with professional lighting and air conditioning'
                     WHEN v.VenueName LIKE '%Cooperage%' THEN 'Full-size field with natural grass and floodlights'
@@ -154,13 +159,9 @@ router.get('/', async (req, res) => {
                     WHEN v.VenueName LIKE '%Sanas%' THEN 'Air-conditioned courts with wooden flooring'
                     WHEN v.VenueName LIKE '%MCA%' THEN 'Professional ground with turf wicket and practice nets'
                     ELSE 'Well-maintained sports facility with modern amenities'    
-                END as Description,
-                ROUND(4.2 + (RAND() * 0.7), 1) as Rating,
-                (SELECT COUNT(*) FROM Bookings b WHERE b.VenueID = v.VenueID) as TotalBookings
-            FROM Venues v 
-            LEFT JOIN Users u ON v.OwnerID = u.UserID
-            LEFT JOIN Sports s ON v.SportID = s.SportID
-            ORDER BY v.VenueName
+                END as Description
+            FROM venue_summary
+            ORDER BY VenueName
         `);
         
         // Post-process results to add local image paths for each venue
@@ -259,6 +260,65 @@ router.get('/my', authenticateToken, requireVenueOwnerOrAdmin, async (req, res) 
         console.error('Get my venues error:', error);
         res.status(500).json({ 
             message: 'Failed to retrieve your venues',
+            error: error.message 
+        });
+    } finally {
+        if (connection) {
+            await connection.end();
+        }
+    }
+});
+
+// GET /api/venues/revenue - Get revenue summary for venue owner's venues
+router.get('/revenue', authenticateToken, requireVenueOwnerOrAdmin, async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection();
+        
+        let whereClause = '';
+        let queryParams = [];
+        
+        if (req.user.roleId === ROLES.VENUE_OWNER) {
+            whereClause = 'WHERE OwnerID = ?';
+            queryParams.push(req.user.userId);
+        }
+        
+        // Use venue_revenue view for pre-aggregated revenue data
+        const [revenueData] = await connection.execute(`
+            SELECT 
+                OwnerID,
+                OwnerName,
+                VenueID,
+                VenueName,
+                TotalBookings,
+                ConfirmedBookings,
+                PendingBookings,
+                TotalRevenue,
+                MonthlyRevenue
+            FROM venue_revenue
+            ${whereClause}
+            ORDER BY TotalRevenue DESC
+        `, queryParams);
+        
+        // Calculate totals
+        const totals = revenueData.reduce((acc, venue) => ({
+            totalBookings: acc.totalBookings + venue.TotalBookings,
+            confirmedBookings: acc.confirmedBookings + venue.ConfirmedBookings,
+            totalRevenue: acc.totalRevenue + parseFloat(venue.TotalRevenue || 0),
+            monthlyRevenue: acc.monthlyRevenue + parseFloat(venue.MonthlyRevenue || 0)
+        }), { totalBookings: 0, confirmedBookings: 0, totalRevenue: 0, monthlyRevenue: 0 });
+        
+        res.json({
+            message: 'Revenue data retrieved successfully',
+            venues: revenueData,
+            totals: totals,
+            total: revenueData.length
+        });
+        
+    } catch (error) {
+        console.error('Get revenue error:', error);
+        res.status(500).json({ 
+            message: 'Failed to retrieve revenue data',
             error: error.message 
         });
     } finally {
@@ -582,13 +642,13 @@ router.put('/update/:id', authenticateToken, requireVenueOwnerOrAdmin, async (re
     }
 });
 
-// DELETE /api/venues/delete/:id - Remove venue from platform (Owner or Admin only)
-router.delete('/delete/:id', authenticateToken, requireVenueOwnership, async (req, res) => {
+// DELETE /api/venues/delete/:venueId - Remove venue from platform (Owner or Admin only)
+router.delete('/delete/:venueId', authenticateToken, requireVenueOwnership, async (req, res) => {
     let connection;
     try {
         connection = await createConnection();
         
-        const venueId = parseInt(req.params.id);
+        const venueId = parseInt(req.params.venueId);
         
         // Get venue data before deletion for audit log
         const [venueToDelete] = await connection.execute(
@@ -602,7 +662,7 @@ router.delete('/delete/:id', authenticateToken, requireVenueOwnership, async (re
         
         // Check for active bookings
         const [activeBookings] = await connection.execute(
-            'SELECT COUNT(*) as count FROM Bookings WHERE VenueID = ? AND Status IN ("Confirmed", "Pending")',
+            'SELECT COUNT(*) as count FROM Bookings WHERE VenueID = ? AND BookingStatus IN ("Confirmed", "Pending")',
             [venueId]
         );
         

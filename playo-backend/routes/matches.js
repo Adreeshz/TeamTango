@@ -3,33 +3,33 @@ const router = express.Router();
 const db = require('../utils/db');
 
 router.get('/', (req, res) => {
+    // Use match_details view for pre-joined match data with winner calculation
     const query = `
-        SELECT m.MatchID, 
-               m.MatchTitle,
-               t1.TeamName as Team1, 
+        SELECT MatchID, 
+               MatchTitle,
+               Team1Name as Team1, 
                CASE 
-                   WHEN t2.TeamName = 'External Team' THEN 'External Team'
-                   WHEN t2.TeamName IS NOT NULL THEN t2.TeamName 
+                   WHEN Team2Name = 'External Team' THEN 'External Team'
+                   WHEN Team2Name IS NOT NULL THEN Team2Name 
                    ELSE 'External Team' 
                END as Team2,
-               v.VenueName as Venue,
-               m.MatchDate,
-               m.MatchTime,
-               m.MatchStatus as Status,
+               VenueName as Venue,
+               MatchDate,
+               MatchTime,
+               MatchStatus as Status,
                CASE 
-                   WHEN m.MatchStatus = 'Completed' AND m.Team1Score > m.Team2Score THEN 'Team1 Won'
-                   WHEN m.MatchStatus = 'Completed' AND m.Team2Score > m.Team1Score THEN 'Team2 Won'
-                   WHEN m.MatchStatus = 'Completed' AND m.Team1Score = m.Team2Score THEN 'Draw'
+                   WHEN MatchStatus = 'Completed' AND Team1Score > Team2Score THEN 'Team1 Won'
+                   WHEN MatchStatus = 'Completed' AND Team2Score > Team1Score THEN 'Team2 Won'
+                   WHEN MatchStatus = 'Completed' AND Team1Score = Team2Score THEN 'Draw'
                    ELSE NULL
                END as Result,
-               m.Team1Score,
-               m.Team2Score,
-               CONCAT(m.MatchTitle, ' in ', v.VenueName) as Description
-        FROM Matches m
-        JOIN Teams t1 ON m.Team1ID = t1.TeamID
-        LEFT JOIN Teams t2 ON m.Team2ID = t2.TeamID
-        JOIN Venues v ON m.VenueID = v.VenueID
-        ORDER BY m.MatchDate DESC, m.MatchTime DESC
+               Team1Score,
+               Team2Score,
+               Winner,
+               SportName,
+               CONCAT(MatchTitle, ' in ', VenueName) as Description
+        FROM match_details
+        ORDER BY MatchDate DESC, MatchTime DESC
     `;
     db.query(query, (err, results) => {
         if(err) return res.status(500).json({ error: err });
