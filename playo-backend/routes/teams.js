@@ -46,6 +46,14 @@ router.get('/', async (req, res) => {
                 u.UserID as CaptainID,
                 u.Email as CaptainEmail,
                 (SELECT COUNT(*) FROM TeamMembers tm WHERE tm.TeamID = t.TeamID) as MemberCount,
+                (SELECT COUNT(*) 
+                 FROM TeamMembers tm 
+                 JOIN Users um ON tm.UserID = um.UserID 
+                 WHERE tm.TeamID = t.TeamID AND um.Gender = 'Male') as MaleMembers,
+                (SELECT COUNT(*) 
+                 FROM TeamMembers tm 
+                 JOIN Users um ON tm.UserID = um.UserID 
+                 WHERE tm.TeamID = t.TeamID AND um.Gender = 'Female') as FemaleMembers,
                 0 as TotalBookings
             FROM Teams t
             LEFT JOIN Sports s ON t.SportID = s.SportID
@@ -118,6 +126,36 @@ router.get('/my', authenticateToken, requirePlayerOrAdmin, async (req, res) => {
     }
 });
 
+// GET /api/teams/:id/members - Get team members using stored procedure
+router.get('/:id/members', async (req, res) => {
+    let connection;
+    try {
+        connection = await createConnection();
+        
+        const teamId = parseInt(req.params.id);
+        
+        // Call the stored procedure to get team members
+        const [members] = await connection.execute('CALL GetTeamMembers(?)', [teamId]);
+        
+        res.json({
+            message: 'Team members retrieved successfully',
+            members: members[0], // Stored procedure results are in first element
+            total: members[0].length
+        });
+        
+    } catch (error) {
+        console.error('Get team members error:', error);
+        res.status(500).json({ 
+            message: 'Failed to retrieve team members',
+            error: error.message 
+        });
+    } finally {
+        if (connection) {
+            await connection.end();
+        }
+    }
+});
+
 // GET /api/teams/:id - Fetch single team by ID with member details
 router.get('/:id', async (req, res) => {
     let connection;
@@ -136,7 +174,8 @@ router.get('/:id', async (req, res) => {
                 u.Name as CaptainName,
                 u.UserID as CaptainID,
                 u.Email as CaptainEmail,
-                u.PhoneNumber as CaptainPhone
+                u.PhoneNumber as CaptainPhone,
+                u.Gender as CaptainGender
             FROM Teams t
             LEFT JOIN Sports s ON t.SportID = s.SportID
             LEFT JOIN Users u ON t.CaptainID = u.UserID
@@ -153,6 +192,7 @@ router.get('/:id', async (req, res) => {
                 tm.UserID,
                 u.Name as MemberName,
                 u.Email as MemberEmail,
+                u.Gender,
                 tm.JoinedDate
             FROM TeamMembers tm
             LEFT JOIN Users u ON tm.UserID = u.UserID
@@ -163,6 +203,13 @@ router.get('/:id', async (req, res) => {
         const team = teams[0];
         team.members = members;
         team.memberCount = members.length;
+        
+        // Calculate gender composition
+        const maleCount = members.filter(m => m.Gender === 'Male').length;
+        const femaleCount = members.filter(m => m.Gender === 'Female').length;
+        
+        team.MaleMembers = maleCount;
+        team.FemaleMembers = femaleCount;
         
         res.json({
             message: 'Team retrieved successfully',
@@ -251,11 +298,8 @@ router.post('/create', authenticateToken, requirePlayerOrAdmin, async (req, res)
                 
                 const newTeamId = teamResult.insertId;
                 
-                // Add captain as team member
-                await connection.execute(
-                    'INSERT INTO TeamMembers (TeamID, UserID) VALUES (?, ?)',
-                    [newTeamId, CaptainID]
-                );
+                // Captain is automatically added as team member by trigger
+                // No need to manually insert into TeamMembers
                 
                 // Commit transaction
                 await connection.commit();
@@ -557,16 +601,16 @@ router.delete('/delete/:id', authenticateToken, requireTeamOwnership, async (req
             return res.status(404).json({ message: 'Team not found' });
         }
         
-        // Check for active bookings
-        const [activeBookings] = await connection.execute(
-            'SELECT COUNT(*) as count FROM Bookings WHERE TeamID = ? AND Status IN ("Confirmed", "Pending")',
-            [teamId]
+        // Check for active matches
+        const [activeMatches] = await connection.execute(
+            'SELECT COUNT(*) as count FROM Matches WHERE (Team1ID = ? OR Team2ID = ?) AND MatchStatus IN ("Scheduled", "Ongoing")',
+            [teamId, teamId]
         );
         
-        if (activeBookings[0].count > 0) {
+        if (activeMatches[0].count > 0) {
             return res.status(400).json({ 
-                message: 'Cannot delete team with active bookings. Please cancel or complete all bookings first.',
-                activeBookings: activeBookings[0].count
+                message: 'Cannot delete team with scheduled or ongoing matches. Please complete or cancel matches first.',
+                activeMatches: activeMatches[0].count
             });
         }
         

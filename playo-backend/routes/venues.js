@@ -52,22 +52,8 @@ router.get('/search', async (req, res) => {
                 v.OwnerID,
                 u.Name as OwnerName,
                 u.PhoneNumber as OwnerPhone,
-                CASE                                                    
-                    WHEN v.VenueName LIKE '%Basketball%' OR v.VenueName LIKE '%Court%' THEN 'Basketball'
-                    WHEN v.VenueName LIKE '%Football%' OR v.VenueName LIKE '%Ground%' THEN 'Football'
-                    WHEN v.VenueName LIKE '%Tennis%' THEN 'Tennis'
-                    WHEN v.VenueName LIKE '%Badminton%' THEN 'Badminton'
-                    WHEN v.VenueName LIKE '%Cricket%' THEN 'Cricket'
-                    ELSE 'Multi-Sport'                                  
-                END as SportType,
-                CASE                                                    
-                    WHEN v.VenueName LIKE '%Basketball%' OR v.VenueName LIKE '%Court%' THEN 120    
-                    WHEN v.VenueName LIKE '%Football%' OR v.VenueName LIKE '%Ground%' THEN 150     
-                    WHEN v.VenueName LIKE '%Tennis%' THEN 130                                      
-                    WHEN v.VenueName LIKE '%Badminton%' THEN 100                                   
-                    WHEN v.VenueName LIKE '%Cricket%' THEN 140                                    
-                    ELSE 110                                                                       
-                END as PricePerHour,
+                COALESCE(s.SportName, 'Multi-Sport') as SportType,
+                v.PricePerHour,
                 CASE                                                    
                     WHEN v.VenueName LIKE '%Shiv Chhatrapati%' THEN 'Modern indoor courts with professional lighting and air conditioning'
                     WHEN v.VenueName LIKE '%Cooperage%' THEN 'Full-size field with natural grass and floodlights'
@@ -80,20 +66,14 @@ router.get('/search', async (req, res) => {
                 (SELECT COUNT(*) FROM Bookings b WHERE b.VenueID = v.VenueID) as TotalBookings
             FROM Venues v 
             LEFT JOIN Users u ON v.OwnerID = u.UserID
+            LEFT JOIN Sports s ON v.SportID = s.SportID
             WHERE v.VenueName LIKE ? 
                OR v.Address LIKE ? 
                OR u.Name LIKE ? 
                OR u.PhoneNumber LIKE ?
                OR CAST(v.VenueID AS CHAR) LIKE ?
                OR CAST(v.PricePerHour AS CHAR) LIKE ?
-               OR (CASE                                                    
-                    WHEN v.VenueName LIKE '%Basketball%' OR v.VenueName LIKE '%Court%' THEN 'Basketball'
-                    WHEN v.VenueName LIKE '%Football%' OR v.VenueName LIKE '%Ground%' THEN 'Football'
-                    WHEN v.VenueName LIKE '%Tennis%' THEN 'Tennis'
-                    WHEN v.VenueName LIKE '%Badminton%' THEN 'Badminton'
-                    WHEN v.VenueName LIKE '%Cricket%' THEN 'Cricket'
-                    ELSE 'Multi-Sport'                                  
-                END) LIKE ?
+               OR s.SportName LIKE ?
             ORDER BY v.VenueName
         `, [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm]);
         
@@ -165,22 +145,8 @@ router.get('/', async (req, res) => {
                 v.Address as Location, 
                 v.OwnerID,
                 u.Name as OwnerName,
-                CASE                                                    
-                    WHEN v.VenueName LIKE '%Basketball%' OR v.VenueName LIKE '%Court%' THEN 'Basketball'
-                    WHEN v.VenueName LIKE '%Football%' OR v.VenueName LIKE '%Ground%' THEN 'Football'
-                    WHEN v.VenueName LIKE '%Tennis%' THEN 'Tennis'
-                    WHEN v.VenueName LIKE '%Badminton%' THEN 'Badminton'
-                    WHEN v.VenueName LIKE '%Cricket%' THEN 'Cricket'
-                    ELSE 'Multi-Sport'                                  
-                END as SportType,
-                CASE                                                    
-                    WHEN v.VenueName LIKE '%Basketball%' OR v.VenueName LIKE '%Court%' THEN 120    
-                    WHEN v.VenueName LIKE '%Football%' OR v.VenueName LIKE '%Ground%' THEN 150     
-                    WHEN v.VenueName LIKE '%Tennis%' THEN 130                                      
-                    WHEN v.VenueName LIKE '%Badminton%' THEN 100                                   
-                    WHEN v.VenueName LIKE '%Cricket%' THEN 140                                    
-                    ELSE 110                                                                       
-                END as PricePerHour,
+                COALESCE(s.SportName, 'Multi-Sport') as SportType,
+                v.PricePerHour,
                 CASE                                                    
                     WHEN v.VenueName LIKE '%Shiv Chhatrapati%' THEN 'Modern indoor courts with professional lighting and air conditioning'
                     WHEN v.VenueName LIKE '%Cooperage%' THEN 'Full-size field with natural grass and floodlights'
@@ -193,6 +159,7 @@ router.get('/', async (req, res) => {
                 (SELECT COUNT(*) FROM Bookings b WHERE b.VenueID = v.VenueID) as TotalBookings
             FROM Venues v 
             LEFT JOIN Users u ON v.OwnerID = u.UserID
+            LEFT JOIN Sports s ON v.SportID = s.SportID
             ORDER BY v.VenueName
         `);
         

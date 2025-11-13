@@ -181,8 +181,11 @@ function requireOwnershipOrAdmin(resourceIdParam, tableName, ownerField = 'UserI
         try {
             connection = await createConnection();
             
+            // Remove trailing 's' from table name if present for ID column
+            const idColumn = tableName.endsWith('s') ? tableName.slice(0, -1) + 'ID' : tableName + 'ID';
+            
             const [results] = await connection.execute(
-                `SELECT ${ownerField} FROM ${tableName} WHERE ${tableName}ID = ?`,
+                `SELECT ${ownerField} FROM ${tableName} WHERE ${idColumn} = ?`,
                 [resourceId]
             );
             
@@ -231,7 +234,7 @@ function requireVenueOwnership(req, res, next) {
  * Checks if user is team captain or admin
  */
 function requireTeamOwnership(req, res, next) {
-    return requireOwnershipOrAdmin('teamId', 'Teams', 'CaptainID')(req, res, next);
+    return requireOwnershipOrAdmin('id', 'Teams', 'CaptainID')(req, res, next);
 }
 
 /**

@@ -230,6 +230,42 @@ END //
 -- SECTION 5: CLEANUP TRIGGERS
 -- ================================================
 
+-- Trigger: Auto-add captain as team member when team is created
+CREATE TRIGGER tr_team_add_captain_member
+AFTER INSERT ON Teams
+FOR EACH ROW
+BEGIN
+    INSERT INTO TeamMembers (TeamID, UserID, JoinedDate)
+    VALUES (NEW.TeamID, NEW.CaptainID, NOW());
+END //
+
+-- Trigger: Validate team name and sport before update
+CREATE TRIGGER tr_team_name_validation
+BEFORE UPDATE ON Teams
+FOR EACH ROW
+BEGIN
+    -- Check if team name conflicts with existing teams for same sport
+    IF NEW.TeamName != OLD.TeamName OR NEW.SportID != OLD.SportID THEN
+        IF EXISTS (
+            SELECT 1 FROM Teams 
+            WHERE TeamName = NEW.TeamName 
+            AND SportID = NEW.SportID 
+            AND TeamID != NEW.TeamID
+        ) THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'A team with this name already exists for this sport';
+        END IF;
+    END IF;
+    
+    -- Check if sport exists
+    IF NEW.SportID != OLD.SportID THEN
+        IF NOT EXISTS (SELECT 1 FROM Sports WHERE SportID = NEW.SportID) THEN
+            SIGNAL SQLSTATE '45000' 
+            SET MESSAGE_TEXT = 'Sport not found';
+        END IF;
+    END IF;
+END //
+
 -- Trigger: Clean up team members when team is deleted
 CREATE TRIGGER tr_team_delete_cleanup
 BEFORE DELETE ON Teams

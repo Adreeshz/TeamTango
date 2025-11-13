@@ -334,85 +334,29 @@ END //
 -- SECTION 5: TEAM MANAGEMENT PROCEDURES
 -- ================================================
 
--- Procedure: Create a new team
-CREATE PROCEDURE CreateTeam(
-    IN p_team_name VARCHAR(150),
-    IN p_sport_id INT,
-    IN p_captain_id INT
-)
+-- Procedure: Get team members
+CREATE PROCEDURE GetTeamMembers(IN teamId INT)
 BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
-    -- Validate captain is a player
-    IF NOT EXISTS (SELECT 1 FROM Users WHERE UserID = p_captain_id AND RoleID = 1) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Invalid captain - must be a player';
-    END IF;
-    
-    -- Create team
-    INSERT INTO Teams (TeamName, SportID, CaptainID)
-    VALUES (p_team_name, p_sport_id, p_captain_id);
-    
-    SET @team_id = LAST_INSERT_ID();
-    
-    -- Add captain as team member
-    INSERT INTO TeamMembers (TeamID, UserID, JoinedDate)
-    VALUES (@team_id, p_captain_id, CURDATE());
-    
-    -- Create notification for captain
-    INSERT INTO Notifications (UserID, Message, IsRead)
-    VALUES (p_captain_id, CONCAT('Team "', p_team_name, '" created successfully!'), FALSE);
-    
-    COMMIT;
-    
-    SELECT 'Team created successfully!' as Message, @team_id as TeamID;
-END //
-
--- Procedure: Join a team
-CREATE PROCEDURE JoinTeam(
-    IN p_team_id INT,
-    IN p_user_id INT
-)
-BEGIN
-    DECLARE EXIT HANDLER FOR SQLEXCEPTION
-    BEGIN
-        ROLLBACK;
-        RESIGNAL;
-    END;
-    
-    START TRANSACTION;
-    
-    -- Check if team exists
-    IF NOT EXISTS (SELECT 1 FROM Teams WHERE TeamID = p_team_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Team not found';
-    END IF;
-    
-    -- Check if user is a player
-    IF NOT EXISTS (SELECT 1 FROM Users WHERE UserID = p_user_id AND RoleID = 1) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Only players can join teams';
-    END IF;
-    
-    -- Check if already a member
-    IF EXISTS (SELECT 1 FROM TeamMembers WHERE TeamID = p_team_id AND UserID = p_user_id) THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Already a member of this team';
-    END IF;
-    
-    -- Add team member
-    INSERT INTO TeamMembers (TeamID, UserID, JoinedDate)
-    VALUES (p_team_id, p_user_id, CURDATE());
-    
-    -- Create notification
-    INSERT INTO Notifications (UserID, Message, IsRead)
-    VALUES (p_user_id, 'You have successfully joined the team!', FALSE);
-    
-    COMMIT;
-    
-    SELECT 'Successfully joined team!' as Message;
+    SELECT 
+        u.UserID,
+        u.Name as MemberName,
+        u.Email,
+        u.PhoneNumber,
+        u.Gender,
+        u.Address,
+        tm.JoinedDate,
+        CASE 
+            WHEN u.UserID = t.CaptainID
+            THEN 'Captain'
+            ELSE 'Member'
+        END as Role
+    FROM TeamMembers tm
+    JOIN Users u ON tm.UserID = u.UserID
+    JOIN Teams t ON tm.TeamID = t.TeamID
+    WHERE tm.TeamID = teamId
+    ORDER BY 
+        CASE WHEN u.UserID = t.CaptainID THEN 0 ELSE 1 END,
+        tm.JoinedDate;
 END //
 
 -- ================================================
