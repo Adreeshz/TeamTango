@@ -578,6 +578,15 @@
         const matchForm = document.getElementById('match-form');
 
         scheduleMatchBtn.addEventListener('click', () => {
+            // Reset form to create mode
+            matchForm.reset();
+            delete matchForm.dataset.editMode;
+            delete matchForm.dataset.matchId;
+            
+            // Reset modal title and button text
+            document.querySelector('#match-modal h3').textContent = 'Schedule New Match';
+            document.querySelector('#match-form button[type="submit"]').textContent = 'Schedule Match';
+            
             // Set minimum date to today
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('match-date').setAttribute('min', today);
@@ -620,6 +629,9 @@
         matchForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             
+            const isEditMode = matchForm.dataset.editMode === 'true';
+            const matchId = matchForm.dataset.matchId;
+            
             const formData = new FormData(matchForm);
             
             // Get team names for match title
@@ -648,37 +660,122 @@
 
             try {
                 const token = localStorage.getItem('token');
-                const response = await fetch(`${API_BASE_URL}/matches/create`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(matchData)
-                });
+                
+                let response;
+                if (isEditMode) {
+                    // Update existing match
+                    response = await fetch(`${API_BASE_URL}/matches/update/${matchId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(matchData)
+                    });
+                } else {
+                    // Create new match
+                    response = await fetch(`${API_BASE_URL}/matches/create`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(matchData)
+                    });
+                }
 
                 if (response.ok) {
                     const result = await response.json();
-                    console.log('Match scheduled successfully:', result);
-                    alert('Match scheduled successfully!');
+                    console.log(isEditMode ? 'Match updated successfully:' : 'Match scheduled successfully:', result);
+                    alert(isEditMode ? 'Match updated successfully!' : 'Match scheduled successfully!');
                     matchModal.classList.add('hidden');
                     matchForm.reset();
+                    
+                    // Reset edit mode
+                    delete matchForm.dataset.editMode;
+                    delete matchForm.dataset.matchId;
+                    
+                    // Reset modal title and button
+                    document.querySelector('#match-modal h3').textContent = 'Schedule New Match';
+                    document.querySelector('#match-form button[type="submit"]').textContent = 'Schedule Match';
+                    
                     loadMatches(); // Reload matches
                 } else {
                     const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                    console.error('Error scheduling match:', response.status, errorData);
-                    alert('Error scheduling match: ' + (errorData.message || response.status));
+                    console.error('Error with match:', response.status, errorData);
+                    alert('Error: ' + (errorData.message || response.status));
                 }
             } catch (error) {
-                console.error('Error scheduling match:', error);
-                alert('Error scheduling match: ' + error.message);
+                console.error('Error with match:', error);
+                alert('Error: ' + error.message);
             }
         });
 
         // Match actions
-        function editMatch(matchId) {
+        async function editMatch(matchId) {
             console.log('Edit match clicked for ID:', matchId);
-            // TODO: Implement match editing functionality
+            
+            try {
+                const token = localStorage.getItem('token');
+                
+                // Fetch the match details
+                const response = await fetch(`${API_BASE_URL}/matches/${matchId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const match = await response.json();
+                    console.log('Fetched match data:', match);
+                    
+                    // Find the sport ID from the team
+                    const team1 = allTeams.find(t => t.TeamID == match.Team1ID);
+                    const sportId = team1 ? team1.SportID : null;
+                    
+                    if (sportId) {
+                        // Set sport and populate teams
+                        document.getElementById('match-sport').value = sportId;
+                        populateTeamsSelect(sportId);
+                        
+                        // After populating, set the team values
+                        setTimeout(() => {
+                            document.getElementById('match-team1').value = match.Team1ID || '';
+                            document.getElementById('match-team2').value = match.Team2ID || '';
+                        }, 100);
+                    }
+                    
+                    // Set other fields
+                    document.getElementById('match-venue').value = match.VenueID || '';
+                    document.getElementById('match-date').value = match.MatchDate ? match.MatchDate.split('T')[0] : '';
+                    document.getElementById('match-time').value = match.MatchTime || '';
+                    
+                    // Description field might not be in the database, so handle gracefully
+                    const descField = document.getElementById('match-description');
+                    if (descField) {
+                        descField.value = match.Description || '';
+                    }
+                    
+                    // Change modal title and button text
+                    document.querySelector('#match-modal h3').textContent = 'Edit Match';
+                    const submitBtn = document.querySelector('#match-form button[type="submit"]');
+                    submitBtn.textContent = 'Update Match';
+                    
+                    // Store the match ID for update
+                    document.getElementById('match-form').dataset.editMode = 'true';
+                    document.getElementById('match-form').dataset.matchId = matchId;
+                    
+                    // Show the modal
+                    document.getElementById('match-modal').classList.remove('hidden');
+                    feather.replace();
+                } else {
+                    alert('Failed to load match details');
+                }
+            } catch (error) {
+                console.error('Error loading match for edit:', error);
+                alert('Error loading match details');
+            }
         }
 
         async function cancelMatch(matchId) {

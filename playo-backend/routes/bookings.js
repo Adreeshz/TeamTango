@@ -313,7 +313,7 @@ router.post('/create', authenticateToken, requirePlayerOrAdmin, async (req, res)
         // Create a pending payment record for the booking
         await connection.execute(`
             INSERT INTO Payments (BookingID, Amount, PaymentMethod, PaymentStatus, PaymentDate)
-            VALUES (?, ?, 'Cash', 'Pending', NOW())
+            VALUES (?, ?, 'Cash', 'Pending', CURDATE())
         `, [newBookingId, slotPrice]);
         
         // Mark timeslot as unavailable

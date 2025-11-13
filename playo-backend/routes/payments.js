@@ -263,84 +263,73 @@ router.post('/process', authenticateToken, requirePlayerOrAdmin, async (req, res
         
         // Check if payment already exists for this booking
         const [existingPayments] = await connection.execute(
-            'SELECT PaymentID FROM Payments WHERE BookingID = ?',
+            'SELECT PaymentID, PaymentStatus FROM Payments WHERE BookingID = ?',
             [BookingID]
         );
         
-        if (existingPayments.length > 0) {
-            return res.status(409).json({ message: 'Payment already exists for this booking' });
+        // If payment exists and is already completed, reject
+        if (existingPayments.length > 0 && existingPayments[0].PaymentStatus === 'Success') {
+            return res.status(409).json({ message: 'Payment already completed for this booking' });
         }
         
-        // Process payment using stored procedure (if available)
+        // Begin transaction
+        await connection.beginTransaction();
+        
         try {
-            const [result] = await connection.execute(
-                'CALL ProcessPayment(?, ?, ?)',
-                [BookingID, Amount, PaymentMethod]
+            let paymentId;
+            
+            // If payment exists (pending), update it
+            if (existingPayments.length > 0) {
+                paymentId = existingPayments[0].PaymentID;
+                
+                // Update existing payment record
+                await connection.execute(
+                    'UPDATE Payments SET Amount = ?, PaymentMethod = ?, PaymentStatus = ?, PaymentDate = CURDATE() WHERE PaymentID = ?',
+                    [Amount, PaymentMethod, 'Success', paymentId]
+                );
+            } else {
+                // Create new payment record
+                const [paymentResult] = await connection.execute(
+                    'INSERT INTO Payments (BookingID, Amount, PaymentMethod, PaymentStatus, PaymentDate) VALUES (?, ?, ?, ?, CURDATE())',
+                    [BookingID, Amount, PaymentMethod, 'Success']
+                );
+                
+                paymentId = paymentResult.insertId;
+            }
+            
+            // Update booking status to confirmed
+            await connection.execute(
+                'UPDATE Bookings SET BookingStatus = "Confirmed" WHERE BookingID = ?',
+                [BookingID]
             );
             
-            const newPaymentId = result[0][0].PaymentID;
+            // Commit transaction
+            await connection.commit();
+            
+            // Log payment creation/update
+            try {
+                await connection.execute(
+                    'INSERT INTO AuditLog (UserID, Action, TableName, RecordID, OldValues, NewValues) VALUES (?, ?, ?, ?, ?, ?)',
+                    [userId, existingPayments.length > 0 ? 'UPDATE' : 'CREATE', 'Payments', paymentId, null, JSON.stringify({ BookingID, Amount, PaymentMethod, Status: 'Success' })]
+                );
+            } catch (logError) {
+                console.log('Audit logging failed:', logError.message);
+            }
             
             res.status(201).json({
                 message: 'Payment processed successfully',
                 payment: {
-                    id: newPaymentId,
+                    id: paymentId,
                     bookingId: BookingID,
                     amount: Amount,
                     method: PaymentMethod,
-                    status: 'Completed'
+                    status: 'Success'
                 }
             });
             
-        } catch (procError) {
-            // Fallback to manual payment processing
-            console.log('Stored procedure not available, using manual processing:', procError.message);
-            
-            // Begin transaction
-            await connection.beginTransaction();
-            
-            try {
-                // Create payment record
-                const [paymentResult] = await connection.execute(
-                    'INSERT INTO Payments (BookingID, Amount, PaymentMethod, PaymentStatus, PaymentDate) VALUES (?, ?, ?, ?, NOW())',
-                    [BookingID, Amount, PaymentMethod, 'Success']
-                );
-                
-                const newPaymentId = paymentResult.insertId;
-                
-                // Update booking status to confirmed
-                await connection.execute(
-                    'UPDATE Bookings SET BookingStatus = "Confirmed" WHERE BookingID = ?',
-                    [BookingID]
-                );
-                
-                // Commit transaction
-                await connection.commit();
-                
-                // Log payment creation
-                try {
-                    await connection.execute(
-                        'INSERT INTO AuditLog (UserID, Action, TableName, RecordID, OldValues, NewValues) VALUES (?, ?, ?, ?, ?, ?)',
-                        [userId, 'CREATE', 'Payments', newPaymentId, null, JSON.stringify({ BookingID, Amount, PaymentMethod, Status: 'Completed' })]
-                    );
-                } catch (logError) {
-                    console.log('Audit logging failed:', logError.message);
-                }
-                
-                res.status(201).json({
-                    message: 'Payment processed successfully',
-                    payment: {
-                        id: newPaymentId,
-                        bookingId: BookingID,
-                        amount: Amount,
-                        method: PaymentMethod,
-                        status: 'Completed'
-                    }
-                });
-                
-            } catch (processError) {
-                await connection.rollback();
-                throw processError;
-            }
+        } catch (processError) {
+            await connection.rollback();
+            throw processError;
         }
         
     } catch (error) {

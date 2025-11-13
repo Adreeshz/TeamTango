@@ -481,10 +481,14 @@
                     ).length;
                     document.getElementById('upcoming-games').textContent = upcomingGames;
                     
-                    const totalSpent = bookings.reduce((sum, b) => 
-                        sum + (b.PaymentAmount || 0), 0
-                    );
-                    document.getElementById('total-spent').textContent = `₹${totalSpent}`;
+                    // Only count payments that are successful/completed
+                    const totalSpent = bookings.reduce((sum, b) => {
+                        if (b.PaymentStatus === 'Success' && b.PaymentAmount) {
+                            return sum + parseFloat(b.PaymentAmount);
+                        }
+                        return sum;
+                    }, 0);
+                    document.getElementById('total-spent').textContent = `₹${totalSpent.toFixed(2)}`;
                 } else {
                     document.getElementById('total-bookings').textContent = '0';
                     document.getElementById('upcoming-games').textContent = '0';
